@@ -62,31 +62,24 @@ void free_routes() {
     }
 }
 
-void handle_example(int client_fd, HttpRequest *req __attribute__((unused))) {
-    serve_file(client_fd, "example/index.html");
+void handle_root(int client_fd, HttpRequest *req __attribute__((unused))) {
+    send_string(client_fd, "Hello TdA");
 }
 
-void handle_cxc_example(int client_fd, HttpRequest *req __attribute__((unused))) {
-    LayoutProps props = {0};
-    char *output = render_layout(&props);
-    send_string(client_fd, output);
-    free(output);
-}
+void handle_api(int client_fd, HttpRequest *req __attribute__((unused))) {
+    cJSON *json = cJSON_CreateObject();
+    cJSON_AddStringToObject(json, "organization", "Student Cyber Games");
+    char *j = cJSON_Print(json);
 
-void handle_post(int client_fd, HttpRequest *req) {
-    cJSON *json = cJSON_Parse(req->body);
+    send_json_response(client_fd, j);
 
-    int status = cjson_get_number(json, "s");
-
-    char response[256];
-    snprintf(response, 256, "{\"status\": %d}", status);
-
-    send_json_response(client_fd, response);
+    cJSON_free(j);
     cJSON_Delete(json);
+
 }
+
 
 void load_routes() {
-    add_route("GET", "/", handle_example);
-    add_route("GET", "/cxc", handle_cxc_example);
-    add_route("POST", "/post_test", handle_post);
+    add_route("GET", "/", handle_root);
+    add_route("GET", "/api", handle_api);
 }
