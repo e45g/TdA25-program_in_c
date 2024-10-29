@@ -14,7 +14,6 @@
 #include "server.h"
 #include "routes.h"
 #include "utils.h"
-#include "db.h"
 
 Server server;
 MimeEntry mime_types[] = {
@@ -368,6 +367,7 @@ void handle_sigint(int sig)
 
 int main()
 {
+    setvbuf(stdout, NULL, _IONBF, 0);
     load_env(".env");
     signal(SIGINT, handle_sigint);
 
