@@ -1,7 +1,9 @@
+#include <time.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <sys/time.h>
 
 #include "utils.h"
 #include "lib/cJSON/cJSON.h"
@@ -71,4 +73,26 @@ int cjson_get_number(cJSON *json, char *key){
     }
 
     return 0;
+}
+
+
+void generate_id(char *buffer) {
+    char charset[] = "abcdefghijklmnopqrstuvwxyz0123456789_";
+    srand((unsigned int)time(NULL));
+
+    for (int i = 0; i < 32; i++) {
+        buffer[i] = charset[rand() % strlen(charset)];
+    }
+    buffer[32] = '\0';
+}
+
+void get_current_time(char *buffer, size_t size) {
+    struct timeval tv;
+    struct tm *tm_info;
+
+    gettimeofday(&tv, NULL);
+    tm_info = gmtime(&tv.tv_sec);
+
+    strftime(buffer, size, "%Y-%m-%dT%H:%M:%S", tm_info);
+    snprintf(buffer + 19, size - 19, ".%03ldZ", tv.tv_usec / 1000);
 }

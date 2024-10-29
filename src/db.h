@@ -19,4 +19,6 @@ int db_exec(const char *query, db_callback callback, void *callback_data, char *
 DBResult *db_query(char *query);
 void free_result(DBResult *result);
 
+int execute_sql_with_placeholders(const char *sql, const char **params, int param_count);
+
 #endif

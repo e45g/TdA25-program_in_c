@@ -15,4 +15,7 @@ const char *get_public_dir();
 const char *cjson_get_string(cJSON *json, char *key);
 int cjson_get_number(cJSON *json, char *key);
 
+void generate_id(char *buffer);
+void get_current_time(char *buffer, size_t size);
+
 #endif

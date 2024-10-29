@@ -50,6 +50,38 @@ int db_exec(const char *query, db_callback callback, void *callback_data, char *
     return rc;
 }
 
+int execute_sql_with_placeholders(const char *sql, const char **params, int param_count) {
+    sqlite3_stmt *stmt;
+
+    if(!db){
+        handle_db_error("sql query execution", "Database not initialized");
+        return -1;
+    }
+
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, 0) != SQLITE_OK) {
+        handle_db_error("execute_sql_with_placeholders", sqlite3_errmsg(db));
+        db = NULL;
+        return -1;
+    }
+
+    for (int i = 0; i < param_count; i++) {
+        if (sqlite3_bind_text(stmt, i + 1, params[i], -1, SQLITE_STATIC) != SQLITE_OK) {
+            handle_db_error("binding parameters", sqlite3_errmsg(db));
+            sqlite3_finalize(stmt);
+            return 1;
+        }
+    }
+
+    if (sqlite3_step(stmt) != SQLITE_DONE) {
+        handle_db_error("execution failed", sqlite3_errmsg(db));
+        sqlite3_finalize(stmt);
+        return 1;
+    }
+
+    sqlite3_finalize(stmt);
+    return 0;
+}
+
 void free_result(DBResult *result){
     if(!result) return;
 
@@ -103,7 +135,6 @@ DBResult *db_query(char *query){
 
     DBResult *result = create_result();
     if(!result){
-        perror("No result?");
         sqlite3_finalize(stmt);
         return NULL;
     }

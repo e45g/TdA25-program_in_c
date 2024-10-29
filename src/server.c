@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/types.h>
+#include <time.h>
 #include <unistd.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -12,6 +13,7 @@
 #include <fcntl.h>
 
 #include "server.h"
+#include "db.h"
 #include "routes.h"
 #include "utils.h"
 
@@ -34,6 +36,7 @@ void handle_critical_error(char *msg, int sckt)
     perror(msg);
     if (sckt > 0)
         close(sckt);
+    db_close();
     exit(EXIT_FAILURE);
 }
 
@@ -361,12 +364,15 @@ void handle_sigint(int sig)
     {
         close(server.sckt);
     }
+    db_close();
     free_routes(server.route);
     exit(0);
 }
 
 int main()
 {
+    srand(time(NULL));
+    db_init("games.db");
     setvbuf(stdout, NULL, _IONBF, 0);
     load_env(".env");
     signal(SIGINT, handle_sigint);
@@ -442,6 +448,7 @@ int main()
         }
     }
 
+    db_close();
     close(sckt);
     close(epoll_fd);
     return 0;
