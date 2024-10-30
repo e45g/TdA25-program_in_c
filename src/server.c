@@ -31,6 +31,24 @@ MimeEntry mime_types[] = {
     {".pdf", "application/pdf"},
 };
 
+const char *get_mime_type(const char *path)
+{
+    const char *ext = strchr(path, '.');
+    if (!ext)
+        return "application/octet-stream";
+
+    for (int i = 0; i < (int) (sizeof(mime_types) / sizeof(mime_types[0])); i++)
+    {
+        if (strcmp(mime_types[i].extension, ext) == 0)
+        {
+            return mime_types[i].mime_type;
+        }
+    }
+
+    return "application/octet-stream";
+}
+
+
 void handle_critical_error(char *msg, int sckt)
 {
     perror(msg);
@@ -40,18 +58,22 @@ void handle_critical_error(char *msg, int sckt)
     exit(EXIT_FAILURE);
 }
 
-ErrorInfo get_error_info(ErrorType err)
+StatusInfo get_error_info(StatusCode err)
 {
     switch (err)
     {
-    case ERR_NOTFOUND:
-        return (ErrorInfo){404, "File Not Found."};
-    case ERR_BADREQ:
-        return (ErrorInfo){400, "Bad Request."};
-    case ERR_INTERR:
-        return (ErrorInfo){500, "Internal Server Error."};
-    default:
-        return (ErrorInfo){500, "Unknown Error."};
+        case OK_CREATED:
+            return (StatusInfo){201, "Created"};
+        case ERR_NOTFOUND:
+            return (StatusInfo){404, "Not Found"};
+        case ERR_BADREQ:
+            return (StatusInfo){400, "Bad Request"};
+        case ERR_UNPROC:
+            return (StatusInfo){422, "Unprocessable Content"};
+        case ERR_INTERR:
+            return (StatusInfo){500, "Internal Server Error"};
+        default:
+            return (StatusInfo){500, "Unknown Error"};
     }
 }
 
@@ -63,7 +85,7 @@ int set_non_blocking(int sock) {
 
 void send_error_response(int client_fd, int error_type)
 {
-    ErrorInfo error_info = get_error_info(error_type);
+    StatusInfo error_info = get_error_info(error_type);
 
     char body[512];
     snprintf(body, sizeof(body), "<html><body><h1>%d %s</h1></body></html>", error_info.status_code, error_info.message);
@@ -83,10 +105,11 @@ void send_string(int client_fd, char *str)
     send(client_fd, response, strlen(response), 0);
 }
 
-void send_json_response(int client_fd, char *json)
+void send_json_response(int client_fd, int status_code, char *json)
 {
+    const char *err = get_error_info((StatusCode) status_code).message;
     char response[BUFFER_SIZE];
-    snprintf(response, sizeof(response), "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: %zu\r\n\r\n%s", strlen(json), json);
+    snprintf(response, sizeof(response), "HTTP/1.1 %d %s\r\nContent-Type: application/json\r\nContent-Length: %zu\r\n\r\n%s", status_code, err, strlen(json), json);
     send(client_fd, response, strlen(response), 0);
 }
 
@@ -95,7 +118,7 @@ int validate_request(const HttpRequest *req)
     return strlen(req->path) > 0 && strlen(req->method) > 0 && strlen(req->version) > 0;
 }
 
-void handle_parsing_error(int client_fd, char *buf, HttpRequest *req, ErrorType error_type)
+void handle_parsing_error(int client_fd, char *buf, HttpRequest *req, StatusCode error_type)
 {
     free(buf);
     free_http_req(req);
@@ -247,23 +270,6 @@ void free_http_req(HttpRequest *req)
     }
     free(req->headers);
     free(req->body);
-}
-
-const char *get_mime_type(const char *path)
-{
-    const char *ext = strchr(path, '.');
-    if (!ext)
-        return "application/octet-stream";
-
-    for (int i = 0; i < (int) (sizeof(mime_types) / sizeof(mime_types[0])); i++)
-    {
-        if (strcmp(mime_types[i].extension, ext) == 0)
-        {
-            return mime_types[i].mime_type;
-        }
-    }
-
-    return "application/octet-stream";
 }
 
 int serve_file(int client_fd, const char *path)

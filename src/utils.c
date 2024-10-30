@@ -58,7 +58,7 @@ const char *get_public_dir(){
 const char *cjson_get_string(cJSON *json, char *key){
     cJSON *value = cJSON_GetObjectItemCaseSensitive(json, key);
 
-    if(value->valuestring != NULL && cJSON_IsString(value)){
+    if(cJSON_IsString(value) && value->valuestring != NULL){
         return value->valuestring;
     }
 
