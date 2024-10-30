@@ -7,16 +7,18 @@
 
 typedef enum
 {
-    ERR_NOTFOUND,
-    ERR_BADREQ,
-    ERR_INTERR,
-} ErrorType;
+    OK_CREATED = 201,
+    ERR_NOTFOUND = 404,
+    ERR_BADREQ = 400,
+    ERR_UNPROC = 422,
+    ERR_INTERR = 500,
+} StatusCode;
 
 typedef struct
 {
     int status_code;
     const char *message;
-} ErrorInfo;
+} StatusInfo;
 
 typedef struct
 {
@@ -32,14 +34,16 @@ typedef struct
     Header *headers;
     int headers_len;
     char *body;
+    char wildcards[16][64];
+    int wildcard_num;
 } HttpRequest;
 
-typedef struct s_route
+typedef struct Route
 {
     char method[16];
     char path[265];
     void (*callback)(int client_fd, HttpRequest *req);
-    struct s_route *next;
+    struct Route *next;
 } Route;
 
 typedef struct
@@ -60,7 +64,7 @@ int serve_file(int client_fd, const char *path);
 void handle_client(int client_fd);
 void handle_sigint(int sig);
 
-void send_json_response(int client_fd, char *json);
+void send_json_response(int client_fd, int status_code, char *json);
 void send_string(int client_fd, char *str);
 
 #endif
