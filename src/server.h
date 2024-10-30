@@ -34,14 +34,16 @@ typedef struct
     Header *headers;
     int headers_len;
     char *body;
+    char wildcards[16][64];
+    int wildcard_num;
 } HttpRequest;
 
-typedef struct s_route
+typedef struct Route
 {
     char method[16];
     char path[265];
     void (*callback)(int client_fd, HttpRequest *req);
-    struct s_route *next;
+    struct Route *next;
 } Route;
 
 typedef struct
