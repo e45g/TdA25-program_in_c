@@ -292,6 +292,7 @@ void handle_client(int client_fd) {
         return;
     }
     buffer[bytes_recieved] = '\0';
+    LOG(buffer); // FLAG;
 
     HttpRequest req = {0};
     int parse_result = parse_http_req(client_fd, buffer, &req);
