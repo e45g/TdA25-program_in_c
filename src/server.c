@@ -55,6 +55,8 @@ void handle_critical_error(char *msg, int sckt) {
 
 ResponseInfo get_response_info(ResponseStatus status) {
     switch (status) {
+        case OK_OK:
+            return (ResponseInfo){200, "OK"};
         case OK_CREATED:
             return (ResponseInfo){201, "Created"};
         case ERR_NOTFOUND:
@@ -118,6 +120,7 @@ void send_json_response(int client_fd, ResponseStatus status, char *json) {
              info.status, info.message, strlen(json), json);
 
     send(client_fd, response, strlen(response), 0);
+    free(response);
 }
 
 int validate_request(const HttpRequest *req) {

@@ -96,6 +96,8 @@ void handle_root(int client_fd, HttpRequest *req __attribute__((unused))) {
 void load_routes() {
     add_route("GET", "/", handle_root);
     add_route("GET", "/api", handle_api);
+
     add_route("POST", "/api/v1/games", handle_game_creation);
     add_route("PUT", "/api/v1/games/*", handle_game_update);
+    add_route("GET", "/api/v1/games/*", handle_get_game);
 }
