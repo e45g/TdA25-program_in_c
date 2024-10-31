@@ -78,7 +78,7 @@ int cjson_get_number(cJSON *json, char *key){
 
 
 void generate_id(char *buffer) {
-    char charset[] = "abcdefghijklmnopqrstuvwxyz0123456789_";
+    char charset[] = "abcdefghijklmnopqrstuvwxyz0123456789";
     srand((unsigned int)time(NULL));
 
     for (int i = 0; i < 32; i++) {
@@ -98,62 +98,3 @@ void get_current_time(char *buffer, size_t size) {
     snprintf(buffer + 19, size - 19, ".%03ldZ", tv.tv_usec / 1000);
 }
 
-int load_board(int client_fd, cJSON *json, char board_str[225], char board_array[15][15], char *player, int *round){
-    cJSON *json_board = cJSON_GetObjectItem(json, "board");
-    if(!json_board || !cJSON_IsArray(json_board)){
-        send_json_response(client_fd, 400, "{\"code\": 400, \"message\": \"Board is missing or not an array.\"}");
-        cJSON_Delete(json);
-        return -1;
-    }
-
-    int x=0, o=0;
-    for (int i = 0; i < 15; i++) {
-        cJSON *row = cJSON_GetArrayItem(json_board, i);
-        if (row != NULL && cJSON_IsArray(row)) {
-            for (int j = 0; j < 15; j++) {
-                cJSON *cell = cJSON_GetArrayItem(row, j);
-                if (cell != NULL && cJSON_IsString(cell)) {
-                    char *s = cell->valuestring;
-                    if(strcmp(s, "X") == 0){
-                        x++;
-                        strcat(board_str, s);
-                        board_array[i][j] = *s;
-                    }
-                    else if(strcmp(s, "O") == 0){
-                        o++;
-                        strcat(board_str, s);
-                        board_array[i][j] = *s;
-                    }
-                    else if (strcmp(s, "") == 0){
-                        strcat(board_str, " ");
-                        board_array[i][j] = ' ';
-                    }
-                    else{
-                        send_json_response(client_fd, 422, "{\"code\": 422, \"message\": \"Semantic error: Place only X or O.\"}");
-                        cJSON_Delete(json);
-                        return -1;
-                    }
-                } else {
-                    send_json_response(client_fd, 422, "{\"code\": 422, \"message\": \"Semantic error: Board is the wrong size. (Expected: 15x15)\"}");
-                    cJSON_Delete(json);
-                    return -1;
-                }
-            }
-        }else{
-            send_json_response(client_fd, 422, "{\"code\": 422, \"message\": \"Semantic error: Board is the wrong size. (Expected: 15x15)\"}");
-            cJSON_Delete(json);
-            return -1;
-        }
-    }
-
-    if(o > x || x-1 > o){
-        send_json_response(client_fd, 422, "{\"code\": 422, \"message\": \"Semantic error: Place equal amount of symbols || x+1 == o.\"}");
-        cJSON_Delete(json);
-        return -1;
-    }
-
-    *player = x-o ? 'O' : 'X';
-    *round = x;
-
-    return 0;
-}

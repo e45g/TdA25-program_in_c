@@ -18,6 +18,4 @@ int cjson_get_number(cJSON *json, char *key);
 void generate_id(char *buffer);
 void get_current_time(char *buffer, size_t size);
 
-int load_board(int client_fd, cJSON *json, char board_str[225], char board_array[15][15], char *player, int *round);
-
 #endif

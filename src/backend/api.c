@@ -1,40 +1,10 @@
 #include "api.h"
 
-#include "tictactoe.h"
+#include "be_utils.h"
 #include "../db.h"
 #include "../utils.h"
 #include "../server.h"
 #include "../lib/cJSON/cJSON.h"
-
-int get_create_params(int client_fd, cJSON *json,const char **name, const char **difficulty, char *game_state, char *date, char board_str[225], char board_array[15][15]){
-    char player;
-    int round = 0;
-    int r = load_board(client_fd, json, board_str, board_array, &player, &round);
-    if(r < 0) return -1;
-
-    const char *p_name = cjson_get_string(json, "name");
-    if(!p_name){
-        send_json_response(client_fd, 400, "{\"code\": 400, \"message\": \"Bad request: missing name\"}");
-        cJSON_Delete(json);
-        return -1;
-    }
-    *name = p_name;
-
-    const char *p_difficulty = cjson_get_string(json, "difficulty");
-    if(!p_difficulty){
-        send_json_response(client_fd, 400, "{\"code\": 400, \"message\": \"Bad request: missing difficulty\"}");
-        cJSON_Delete(json);
-        return -1;
-    }
-    *difficulty = p_difficulty;
-
-
-    get_game_state(game_state, board_array, player, round);
-    get_current_time(date, 64);
-
-
-    return 0;
-}
 
 void handle_api(int client_fd, HttpRequest *req __attribute__((unused))) {
     cJSON *json = cJSON_CreateObject();
@@ -50,7 +20,7 @@ void handle_api(int client_fd, HttpRequest *req __attribute__((unused))) {
 void handle_game_creation(int client_fd, HttpRequest *req){
     cJSON *json = cJSON_Parse(req->body);
     if(!json){
-        send_json_response(client_fd, 400, "{\"code\": 400, \"message\": \"Error while parsing json\"}");
+        send_json_response(client_fd, ERR_BADREQ, "{\"code\": 400, \"message\": \"Error while parsing json\"}");
         return;
     }
 
@@ -65,7 +35,7 @@ void handle_game_creation(int client_fd, HttpRequest *req){
     char board_array[15][15] = {0};
 
 
-    if(get_create_params(client_fd, json, &name, &difficulty, game_state, date, board_str, board_array) < 0){
+    if(get_create_update_params(client_fd, json, &name, &difficulty, game_state, date, board_str, board_array) < 0){
         return;
     }
 
@@ -81,7 +51,7 @@ void handle_game_creation(int client_fd, HttpRequest *req){
     };
 
     if(execute_sql_with_placeholders(sql, params, 7) != 0){
-        send_json_response(client_fd, 400, "{\"code\": 500, \"message\": \"DB error.\"}");
+        send_json_response(client_fd, ERR_INTERR, "{\"code\": 500, \"message\": \"DB error.\"}");
         cJSON_Delete(json);
         return;
     }
@@ -104,7 +74,7 @@ void handle_game_creation(int client_fd, HttpRequest *req){
 void handle_game_update(int client_fd, HttpRequest *req){
     cJSON *json = cJSON_Parse(req->body);
     if(!json){
-        send_json_response(client_fd, 400, "{\"code\": 400, \"message\": \"Error while parsing json\"}");
+        send_json_response(client_fd, ERR_BADREQ, "{\"code\": 400, \"message\": \"Error while parsing json\"}");
         return;
     }
 
@@ -117,12 +87,12 @@ void handle_game_update(int client_fd, HttpRequest *req){
     char board_array[15][15] = {0};
 
     if(!exists(id)){
-        send_json_response(client_fd, 404, "{\"code\": 404, \"message\": \"Resource not found.\"}");
+        send_json_response(client_fd, ERR_NOTFOUND, "{\"code\": 404, \"message\": \"Resource not found.\"}");
         cJSON_Delete(json);
         return;
     }
 
-    if(get_create_params(client_fd, json, &name, &difficulty, game_state, date, board_str, board_array) < 0){
+    if(get_create_update_params(client_fd, json, &name, &difficulty, game_state, date, board_str, board_array) < 0){
         return;
     }
 
@@ -137,7 +107,7 @@ void handle_game_update(int client_fd, HttpRequest *req){
     };
 
     if(execute_sql_with_placeholders(sql, params, 6) != 0){
-        send_json_response(client_fd, 500, "{\"code\": 500, \"message\": \"DB error\"}");
+        send_json_response(client_fd, ERR_INTERR, "{\"code\": 500, \"message\": \"DB error\"}");
         cJSON_Delete(json);
         return;
     }
