@@ -1,3 +1,4 @@
+#include <complex.h>
 #include <stdio.h>
 
 #include "api.h"
@@ -177,5 +178,21 @@ void handle_list_games(int client_fd, HttpRequest *req){
     cJSON_Delete(json_array);
     cJSON_free(json_str);
     free_result(result);
-
 }
+
+void handle_game_deletion(int client_fd, HttpRequest *req){
+    const char *id = req->wildcards[0];
+
+    if(!exists(id)){
+        send_json_response(client_fd, ERR_NOTFOUND, "{\"code\": 404, \"message\": \"Resource not found.\"}");
+        return;
+    }
+
+    if(execute_sql_with_placeholders("DELETE FROM games WHERE id = ?", (const char **){&id}, 1) != 0){
+        send_json_response(client_fd, ERR_INTERR, "{\"code\": 500, \"message\": \"DB error\"}");
+        return;
+    }
+
+    send_json_response(client_fd, OK_NOCONTENT, "{\"code\": 204, \"message\": \"Deleted\"}");
+}
+

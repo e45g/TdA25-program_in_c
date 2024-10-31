@@ -9,6 +9,7 @@ typedef enum
 {
     OK_OK = 200,
     OK_CREATED = 201,
+    OK_NOCONTENT = 204,
     ERR_NOTFOUND = 404,
     ERR_BADREQ = 400,
     ERR_UNPROC = 422,

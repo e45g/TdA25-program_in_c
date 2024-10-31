@@ -59,6 +59,8 @@ ResponseInfo get_response_info(ResponseStatus status) {
             return (ResponseInfo){200, "OK"};
         case OK_CREATED:
             return (ResponseInfo){201, "Created"};
+        case OK_NOCONTENT:
+            return (ResponseInfo){204, "No Content"};
         case ERR_NOTFOUND:
             return (ResponseInfo){404, "Not Found"};
         case ERR_BADREQ:
@@ -107,7 +109,7 @@ void send_json_response(int client_fd, ResponseStatus status, char *json) {
     ResponseInfo info = get_response_info(status);
     ssize_t response_len = strlen(json) + 256;
 
-    char *response = malloc(response_len);
+char *response = malloc(response_len);
     if(!response){
         send_error_response(client_fd, ERR_INTERR);
     }
