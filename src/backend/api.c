@@ -1,4 +1,3 @@
-#include <complex.h>
 #include <stdio.h>
 
 #include "api.h"
@@ -150,7 +149,7 @@ void handle_get_game(int client_fd, HttpRequest *req){
     cJSON_Delete(json);
 }
 
-void handle_list_games(int client_fd, HttpRequest *req){
+void handle_list_games(int client_fd, HttpRequest *req __attribute__((unused))){
     // It's slower but who cares
     DBResult *result = db_query("SELECT id FROM games;", NULL, 0);
     if(!result){

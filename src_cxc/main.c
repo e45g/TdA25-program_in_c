@@ -10,7 +10,7 @@
 
 #define SAVE_PATH "./src/cxc/"
 
-#define PATH_TO_CX_FILES "./test"
+#define PATH_TO_CX_FILES "./cx_files"
 #define MAX_NAME 64
 #define MAX_FILE_NAME 128
 #define BUFFER_SIZE 4096
