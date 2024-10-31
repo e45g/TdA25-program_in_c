@@ -5,6 +5,7 @@
 #include "../utils.h"
 #include "../server.h"
 #include "../lib/cJSON/cJSON.h"
+#include <stdio.h>
 
 void handle_api(int client_fd, HttpRequest *req __attribute__((unused))) {
     cJSON *json = cJSON_CreateObject();
@@ -113,10 +114,18 @@ void handle_game_update(int client_fd, HttpRequest *req){
     }
 
 
-    // TODO : Read from DB, missing createdAt
     cJSON_AddStringToObject(json, "uuid", id);
     cJSON_AddStringToObject(json, "updatedAt", date);
     cJSON_AddStringToObject(json, "gameState", game_state);
+
+    DBResult *result = db_query("SELECT created_at FROM games WHERE id = ?", (const char**){&id}, 1);
+    if(!result){
+        send_json_response(client_fd, ERR_INTERR, "{\"code\": 500, \"message\": \"DB error\"}");
+        cJSON_Delete(json);
+        return;
+    }
+
+    cJSON_AddStringToObject(json, "createdAt", result->rows[0][0]);
 
     char *json_str = cJSON_Print(json);
 

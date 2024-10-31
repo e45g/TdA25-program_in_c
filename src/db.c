@@ -60,7 +60,6 @@ int execute_sql_with_placeholders(const char *sql, const char **params, int para
 
     if (sqlite3_prepare_v2(db, sql, -1, &stmt, 0) != SQLITE_OK) {
         handle_db_error("execute_sql_with_placeholders", sqlite3_errmsg(db));
-        db = NULL;
         return -1;
     }
 
@@ -120,7 +119,7 @@ DBResult *create_result(){
     return result;
 }
 
-DBResult *db_query(char *query){
+DBResult *db_query(char *query, const char **params, int params_count){
     if(!db){
         handle_db_error("DB query", "Database not initialized");
         return NULL;
@@ -131,6 +130,14 @@ DBResult *db_query(char *query){
     if(rc != SQLITE_OK){
         handle_db_error("stmt sqlite3_prepare_v2", sqlite3_errmsg(db));
         return NULL;
+    }
+
+    for(int i=0; i < params_count; i++){
+        if(sqlite3_bind_text(stmt, i+1, params[i], -1, SQLITE_STATIC) != SQLITE_OK){
+            handle_db_error("binding parameters", sqlite3_errmsg(db));
+            sqlite3_finalize(stmt);
+            return NULL;
+        }
     }
 
     DBResult *result = create_result();
