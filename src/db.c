@@ -175,7 +175,7 @@ DBResult *db_query(char *query, const char **params, int params_count){
     while(sqlite3_step(stmt) == SQLITE_ROW){
         if(result->num_rows >= max_rows){
             max_rows *= 2;
-            char ***new_rows = realloc(result->rows, max_rows);
+            char ***new_rows = realloc(result->rows, max_rows * sizeof(char**));
             if(!new_rows){
                 sqlite3_finalize(stmt);
                 free_result(result);

@@ -140,61 +140,42 @@ void handle_get_game(int client_fd, HttpRequest *req){
         send_json_response(client_fd, ERR_NOTFOUND, "{\"code\": 404, \"message\": \"Resource not found.\"}");
         return;
     }
-
-    DBResult *result = db_query("SELECT created_at, updated_at, name, difficulty, game_state, board FROM games WHERE id = ?", (const char **){&id}, 1);
-    if(!result){
-        send_json_response(client_fd, ERR_INTERR, "{\"code\": 500, \"message\": \"DB error\"}");
-        return;
-    }
-
-    cJSON *json = cJSON_CreateObject();
-    if(!json){
-        send_json_response(client_fd, ERR_INTERR, "{\"code\": 500, \"message\": \"Internal Error\"}");
-        return;
-    }
-
-    char ***rows = result->rows;
-
-    // I did this only to realize i dont need it
-    //
-    // char board[15][15] = {0};
-    // char *s = rows[0][5];
-    // int j = 0;
-    // while(*s){
-    //     if(j / 15 >= 15) break;
-    //     *(*(board+(j/15))+(j%15)) = *s++;j++; // Just flexing
-    // }
-    //
-
-
-    cJSON *json_board = cJSON_CreateArray();
-    for(int i = 0; i < 15; i++){
-        cJSON *row_array = cJSON_CreateArray();
-        for(int j = 0; j < 15; j++){
-            char value = rows[0][5][i*15+j];
-            char value_str[2] = {value, '\0'};
-            cJSON *str = cJSON_CreateString(value == ' ' ? "" : value_str);
-
-            cJSON_AddItemToArray(row_array, str);
-        }
-        cJSON_AddItemToArray(json_board, row_array);
-    }
-
-
-    cJSON_AddStringToObject(json, "uuid", id);
-    cJSON_AddStringToObject(json, "createdAt", rows[0][0]);
-    cJSON_AddStringToObject(json, "updatedAt", rows[0][1]);
-    cJSON_AddStringToObject(json, "name", rows[0][2]);
-    cJSON_AddStringToObject(json, "difficulty", rows[0][3]);
-    cJSON_AddStringToObject(json, "game_state", rows[0][4]);
-    cJSON_AddItemToObject(json, "board", json_board);
-
+    cJSON *json = get_game(client_fd, id);
     char *json_str = cJSON_Print(json);
 
-    free_result(result);
     send_json_response(client_fd, OK_OK, json_str);
-
 
     cJSON_free(json_str);
     cJSON_Delete(json);
+}
+
+void handle_list_games(int client_fd, HttpRequest *req){
+    // It's slower but who cares
+    DBResult *result = db_query("SELECT id FROM games;", NULL, 0);
+    if(!result){
+        send_json_response(client_fd, ERR_INTERR, "{\"code\": 500, \"message\": \"Internal server error\"}");
+        return;
+    }
+
+
+    cJSON *json_array = cJSON_CreateArray();
+    if(!json_array){
+        free_result(result);
+        send_json_response(client_fd, ERR_INTERR, "{\"code\": 500, \"message\": \"Internal server error\"}");
+        return;
+    }
+
+    for(int i = 0; i < result->num_rows; i++){
+        cJSON *game = get_game(client_fd, result->rows[0][0]);
+        if(!game) continue;
+        cJSON_AddItemToArray(json_array, game);
+    }
+
+
+    char *json_str = cJSON_Print(json_array);
+    send_json_response(client_fd, OK_OK, json_str);
+    cJSON_Delete(json_array);
+    cJSON_free(json_str);
+    free_result(result);
+
 }

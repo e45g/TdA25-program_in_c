@@ -4,10 +4,10 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <sys/time.h>
+#include <unistd.h>
 
 #include "utils.h"
 #include "lib/cJSON/cJSON.h"
-#include "server.h"
 
 void logg(long line, const char *file, const char *func, const char *format, ...){
     printf("LOG: [%s:%ld %s] ", file, line, func);
@@ -79,7 +79,8 @@ int cjson_get_number(cJSON *json, char *key){
 
 void generate_id(char *buffer) {
     char charset[] = "abcdefghijklmnopqrstuvwxyz0123456789";
-    srand((unsigned int)time(NULL));
+    static int call_count = 0;
+    srand((unsigned int)time(NULL) ^ (getpid() << 16) ^ call_count++);
 
     for (int i = 0; i < 32; i++) {
         buffer[i] = charset[rand() % strlen(charset)];

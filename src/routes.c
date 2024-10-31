@@ -100,4 +100,5 @@ void load_routes() {
     add_route("POST", "/api/v1/games", handle_game_creation);
     add_route("PUT", "/api/v1/games/*", handle_game_update);
     add_route("GET", "/api/v1/games/*", handle_get_game);
+    add_route("GET", "/api/v1/games", handle_list_games);
 }
