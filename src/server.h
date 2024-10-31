@@ -7,18 +7,20 @@
 
 typedef enum
 {
+    OK_OK = 200,
     OK_CREATED = 201,
+    OK_NOCONTENT = 204,
     ERR_NOTFOUND = 404,
     ERR_BADREQ = 400,
     ERR_UNPROC = 422,
     ERR_INTERR = 500,
-} StatusCode;
+} ResponseStatus;
 
 typedef struct
 {
-    int status_code;
+    ResponseStatus status;
     const char *message;
-} StatusInfo;
+} ResponseInfo;
 
 typedef struct
 {
@@ -64,7 +66,7 @@ int serve_file(int client_fd, const char *path);
 void handle_client(int client_fd);
 void handle_sigint(int sig);
 
-void send_json_response(int client_fd, int status_code, char *json);
+void send_json_response(int client_fd, ResponseStatus status, char *json);
 void send_string(int client_fd, char *str);
 
 #endif

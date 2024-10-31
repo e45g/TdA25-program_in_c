@@ -93,9 +93,13 @@ void handle_root(int client_fd, HttpRequest *req __attribute__((unused))) {
     send_string(client_fd, "Hello TdA");
 }
 
-
 void load_routes() {
     add_route("GET", "/", handle_root);
     add_route("GET", "/api", handle_api);
+
     add_route("POST", "/api/v1/games", handle_game_creation);
+    add_route("PUT", "/api/v1/games/*", handle_game_update);
+    add_route("DELETE", "/api/v1/games/*", handle_game_deletion);
+    add_route("GET", "/api/v1/games/*", handle_get_game);
+    add_route("GET", "/api/v1/games", handle_list_games);
 }

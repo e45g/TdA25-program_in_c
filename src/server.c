@@ -53,20 +53,24 @@ void handle_critical_error(char *msg, int sckt) {
     exit(EXIT_FAILURE);
 }
 
-StatusInfo get_error_info(StatusCode err) {
-    switch (err) {
+ResponseInfo get_response_info(ResponseStatus status) {
+    switch (status) {
+        case OK_OK:
+            return (ResponseInfo){200, "OK"};
         case OK_CREATED:
-            return (StatusInfo){201, "Created"};
+            return (ResponseInfo){201, "Created"};
+        case OK_NOCONTENT:
+            return (ResponseInfo){204, "No Content"};
         case ERR_NOTFOUND:
-            return (StatusInfo){404, "Not Found"};
+            return (ResponseInfo){404, "Not Found"};
         case ERR_BADREQ:
-            return (StatusInfo){400, "Bad Request"};
+            return (ResponseInfo){400, "Bad Request"};
         case ERR_UNPROC:
-            return (StatusInfo){422, "Unprocessable Content"};
+            return (ResponseInfo){422, "Unprocessable Content"};
         case ERR_INTERR:
-            return (StatusInfo){500, "Internal Server Error"};
+            return (ResponseInfo){500, "Internal Server Error"};
         default:
-            return (StatusInfo){500, "Unknown Error"};
+            return (ResponseInfo){500, "Unknown Error"};
     }
 }
 
@@ -76,15 +80,20 @@ int set_non_blocking(int sock) {
     return fcntl(sock, F_SETFL, flags | O_NONBLOCK);
 }
 
-void send_error_response(int client_fd, int error_type) {
-    StatusInfo error_info = get_error_info(error_type);
+void send_error_response(int client_fd, ResponseStatus status) {
+    ResponseInfo info = get_response_info(status);
 
     char body[512];
-    snprintf(body, sizeof(body), "<html><body><h1>%d %s</h1></body></html>", error_info.status_code, error_info.message);
+    snprintf(body, sizeof(body), "<html><body><h1>%d %s</h1></body></html>", info.status, info.message);
 
     char response[1024];
-    snprintf(response, sizeof(response), "HTTP/1.1 %d %s\r\nContent-Type: text/html\r\nContent-Length: %zu\r\n\r\n%s",
-             error_info.status_code, error_info.message, strlen(body), body);
+    snprintf(response, sizeof(response),
+             "HTTP/1.1 %d %s\r\n"
+             "Content-Type: text/html\r\n"
+             "Content-Length: %zu\r\n"
+             "Connection: close\r\n\r\n%s",
+             info.status, info.message, strlen(body), body);
+
     send(client_fd, response, strlen(response), 0);
 }
 
@@ -96,18 +105,31 @@ void send_string(int client_fd, char *str) {
     send(client_fd, response, strlen(response), 0);
 }
 
-void send_json_response(int client_fd, int status_code, char *json) {
-    const char *err = get_error_info((StatusCode) status_code).message;
-    char response[BUFFER_SIZE];
-    snprintf(response, sizeof(response), "HTTP/1.1 %d %s\r\nContent-Type: application/json\r\nContent-Length: %zu\r\n\r\n%s", status_code, err, strlen(json), json);
+void send_json_response(int client_fd, ResponseStatus status, char *json) {
+    ResponseInfo info = get_response_info(status);
+    ssize_t response_len = strlen(json) + 256;
+
+char *response = malloc(response_len);
+    if(!response){
+        send_error_response(client_fd, ERR_INTERR);
+    }
+
+    snprintf(response, response_len,
+             "HTTP/1.1 %d %s\r\n"
+             "Content-Type: application/json\r\n"
+             "Content-Length: %zu\r\n"
+             "Connection: close\r\n\r\n%s",
+             info.status, info.message, strlen(json), json);
+
     send(client_fd, response, strlen(response), 0);
+    free(response);
 }
 
 int validate_request(const HttpRequest *req) {
     return strlen(req->path) > 0 && strlen(req->method) > 0 && strlen(req->version) > 0;
 }
 
-void handle_parsing_error(int client_fd, char *buf, HttpRequest *req, StatusCode error_type) {
+void handle_parsing_error(int client_fd, char *buf, HttpRequest *req, ResponseStatus error_type) {
     free(buf);
     free_http_req(req);
     send_error_response(client_fd, error_type);
@@ -341,6 +363,8 @@ int main() {
 
     load_env(".env");
     db_init("games.db");
+
+    db_exec("CREATE TABLE IF NOT EXISTS games (id TEXT PRIMARY KEY NOT NULL, created_at DATE NOT NULL, updated_at DATE, name TEXT NOT NULL, difficulty TEXT NOT NULL, game_state TEXT NOT NULL, board TEXT NOT NULL);", NULL, 0, NULL);
 
     const int PORT = get_port();
     struct epoll_event ev, events[MAX_EVENTS];
