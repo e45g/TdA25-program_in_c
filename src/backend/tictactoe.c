@@ -46,9 +46,9 @@ int can_win_in_one_move(char board[15][15], char player) {
     return 0;
 }
 
-void get_game_state(char *buffer, char board[15][15], int x, int o){
-    int can_win = can_win_in_one_move(board, x-o ? 'O' : 'X');
+void get_game_state(char *buffer, char board[15][15], char player, int round){
+    int can_win = can_win_in_one_move(board, player);
     if(can_win) strcpy(buffer, "end_game");
-    else if(x >= 6) strcpy(buffer, "middle_game");
+    else if(round >= 6) strcpy(buffer, "middle_game");
     else strcpy(buffer, "opening");
 }

@@ -68,14 +68,14 @@ int execute_sql_with_placeholders(const char *sql, const char **params, int para
         if (sqlite3_bind_text(stmt, i + 1, params[i], -1, SQLITE_STATIC) != SQLITE_OK) {
             handle_db_error("binding parameters", sqlite3_errmsg(db));
             sqlite3_finalize(stmt);
-            return 1;
+            return -1;
         }
     }
 
     if (sqlite3_step(stmt) != SQLITE_DONE) {
         handle_db_error("execution failed", sqlite3_errmsg(db));
         sqlite3_finalize(stmt);
-        return 1;
+        return -1;
     }
 
     sqlite3_finalize(stmt);
@@ -200,4 +200,30 @@ DBResult *db_query(char *query){
 
     sqlite3_finalize(stmt);
     return result;
+}
+
+
+int exists(const char *id){
+    if(!db){
+        handle_db_error("DB query", "Database not initialized");
+        return -1;
+    }
+
+    sqlite3_stmt *stmt;
+    const char *sql = "SELECT ID FROM games WHERE ID = ?";
+
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, NULL) != SQLITE_OK) {
+        handle_db_error("stmt sqlite3_prepare_v2", sqlite3_errmsg(db));
+        return -1;
+
+    }
+
+    sqlite3_bind_text(stmt, 1, id, -1, SQLITE_STATIC);
+    int exists = 0;
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        exists = 1;
+    }
+
+    sqlite3_finalize(stmt);
+    return exists;
 }

@@ -20,5 +20,6 @@ DBResult *db_query(char *query);
 void free_result(DBResult *result);
 
 int execute_sql_with_placeholders(const char *sql, const char **params, int param_count);
+int exists(const char *id);
 
 #endif
