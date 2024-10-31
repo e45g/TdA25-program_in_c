@@ -342,6 +342,8 @@ int main() {
     load_env(".env");
     db_init("games.db");
 
+    db_exec("CREATE TABLE IF NOT EXISTS games (id TEXT PRIMARY KEY NOT NULL, created_at DATE NOT NULL, updated_at DATE, name TEXT NOT NULL, difficulty TEXT NOT NULL, game_state TEXT NOT NULL, board TEXT NOT NULL);", NULL, 0, NULL);
+
     const int PORT = get_port();
     struct epoll_event ev, events[MAX_EVENTS];
 
