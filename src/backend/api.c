@@ -129,6 +129,7 @@ void handle_game_update(int client_fd, HttpRequest *req){
 
     char *json_str = cJSON_Print(json);
 
+    free_result(result);
     send_json_response(client_fd, 201, json_str);
     cJSON_free(json_str);
     cJSON_Delete(json);
