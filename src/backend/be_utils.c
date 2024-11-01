@@ -90,7 +90,7 @@ int get_create_update_params(int client_fd, cJSON *json,const char **name, const
 
 
     get_game_state(game_state, board_array, player, round);
-    get_current_time(date, 64);
+    get_current_time(date, 64, 0);
 
 
     return 0;

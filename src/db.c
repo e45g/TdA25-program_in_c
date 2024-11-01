@@ -103,7 +103,7 @@ void free_result(DBResult *result){
 
     free(result);
 }
-DBResult *create_result(){
+DBResult *create_result(void){
     DBResult *result = malloc(sizeof(DBResult));
 
     if (!result) {

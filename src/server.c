@@ -355,11 +355,10 @@ void handle_sigint(int sig) {
     exit(0);
 }
 
-int main() {
+int main(void) {
     srand(time(NULL));
     setvbuf(stdout, NULL, _IONBF, 0);
     signal(SIGINT, handle_sigint);
-
 
     load_env(".env");
     db_init("games.db");

@@ -41,17 +41,17 @@ int load_env(const char *path){
     return 1;
 }
 
-int get_port(){
+int get_port(void){
     const char *port = getenv("PORT");
     return port ? strtol(port, NULL, 10) : 1444;
 }
 
-const char *get_routes_dir(){
+const char *get_routes_dir(void){
     const char *dir = getenv("ROUTES_DIR");
     return dir ? dir : "./routes";
 }
 
-const char *get_public_dir(){
+const char *get_public_dir(void){
     const char *dir = getenv("PUBLIC_DIR");
     return dir ? dir : "./public";
 }
@@ -88,14 +88,19 @@ void generate_id(char *buffer) {
     buffer[32] = '\0';
 }
 
-void get_current_time(char *buffer, size_t size) {
+void get_current_time(char *buffer, size_t size, long offset) {
     struct timeval tv;
-    struct tm *tm_info;
+    struct tm tm_info;
 
     gettimeofday(&tv, NULL);
-    tm_info = gmtime(&tv.tv_sec);
+    gmtime_r(&tv.tv_sec, &tm_info);
+    tm_info.tm_sec += offset;
 
-    strftime(buffer, size, "%Y-%m-%dT%H:%M:%S", tm_info);
-    snprintf(buffer + 19, size - 19, ".%03ldZ", tv.tv_usec / 1000);
+    mktime(&tm_info);
+
+    if (size > 0) {
+        strftime(buffer, size, "%Y-%m-%dT%H:%M:%S", &tm_info);
+        snprintf(buffer + 19, size - 19, ".%03ldZ", tv.tv_usec / 1000);
+    }
 }
 

@@ -58,7 +58,6 @@ void handle_game_creation(int client_fd, HttpRequest *req){
     }
 
 
-    // TODO : Read from DB
     cJSON_AddStringToObject(json, "uuid", id);
     cJSON_AddStringToObject(json, "createdAt", date);
     cJSON_AddStringToObject(json, "updatedAt", date);
