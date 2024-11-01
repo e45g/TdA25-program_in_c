@@ -76,14 +76,29 @@ int cjson_get_number(cJSON *json, char *key){
     return 0;
 }
 
+/*
+*   Pseudo random number generator by Terry A. Davis
+*/
+unsigned int get_num() {
+    unsigned int i;
+    __asm__ __volatile__ (
+        "RDTSC\n"
+        "MOV %%EAX, %%EAX\n"
+        "SHL $32, %%RDX\n"
+        "ADD %%RDX, %%RAX\n"
+        : "=a" (i)
+        :
+        : "%rdx"
+    );
+    return i;
+}
 
 void generate_id(char *buffer) {
     char charset[] = "abcdefghijklmnopqrstuvwxyz0123456789";
-    static int call_count = 0;
-    srand((unsigned int)time(NULL) ^ (getpid() << 16) ^ call_count++);
+    int charset_len = strlen(charset);
 
     for (int i = 0; i < 32; i++) {
-        buffer[i] = charset[rand() % strlen(charset)];
+        buffer[i] = charset[get_num() % charset_len];
     }
     buffer[32] = '\0';
 }
