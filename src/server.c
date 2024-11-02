@@ -16,6 +16,7 @@
 #include "db.h"
 #include "routes.h"
 #include "utils.h"
+#include "jsonc/jsonc.h"
 
 Server server;
 MimeEntry mime_types[] = {
@@ -356,7 +357,21 @@ void handle_sigint(int sig) {
 }
 
 int main(void) {
-    srand(time(NULL));
+
+    Json *json = json_create_object();
+    Json *str = json_create_string("yooooo");
+    Json *str1 = json_create_string("asdasd");
+
+    json_object_add(json, "str1234", str);
+    json_object_add(json, "str1", str);
+
+    char *json_str = json_print(json);
+    printf("json: %s\n", json_str);
+
+    json_free(json);
+    free(json_str);
+    return 0;
+
     setvbuf(stdout, NULL, _IONBF, 0);
     signal(SIGINT, handle_sigint);
 
