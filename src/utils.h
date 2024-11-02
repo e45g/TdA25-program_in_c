@@ -1,7 +1,7 @@
 #ifndef UTILS_H
 #define UTILS_H
 
-#include "lib/cJSON/cJSON.h"
+#include "json/json.h"
 
 void logg(long line, const char *file, const char *func, const char *format, ...);
 #define LOG(format, ...) logg(__LINE__, __FILE__, __PRETTY_FUNCTION__, format, ##__VA_ARGS__)
@@ -11,9 +11,6 @@ int load_env(const char *path);
 int get_port(void);
 const char *get_routes_dir(void);
 const char *get_public_dir(void);
-
-const char *cjson_get_string(cJSON *json, char *key);
-int cjson_get_number(cJSON *json, char *key);
 
 void generate_id(char *buffer);
 void get_current_time(char *buffer, size_t size, long offset);

@@ -1,25 +1,26 @@
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "api.h"
 #include "be_utils.h"
 #include "../db.h"
 #include "../utils.h"
 #include "../server.h"
-#include "../lib/cJSON/cJSON.h"
+#include "../json/json.h"
 
 void handle_api(int client_fd, HttpRequest *req __attribute__((unused))) {
-    cJSON *json = cJSON_CreateObject();
-    cJSON_AddStringToObject(json, "organization", "Student Cyber Games");
-    char *j = cJSON_Print(json);
+    Json *json = json_create_object();
+    json_object_add_string(json, "organization", "Student Cyber Games");
+    char *j = json_print(json);
 
     send_json_response(client_fd, 200, j);
 
-    cJSON_free(j);
-    cJSON_Delete(json);
+    free(j);
+    json_free(json);
 }
 
 void handle_game_creation(int client_fd, HttpRequest *req){
-    cJSON *json = cJSON_Parse(req->body);
+    Json *json = json_parse(req->body);
     if(!json){
         send_json_response(client_fd, ERR_BADREQ, "{\"code\": 400, \"message\": \"Error while parsing json\"}");
         return;
@@ -53,26 +54,26 @@ void handle_game_creation(int client_fd, HttpRequest *req){
 
     if(execute_sql_with_placeholders(sql, params, 7) != 0){
         send_json_response(client_fd, ERR_INTERR, "{\"code\": 500, \"message\": \"DB error.\"}");
-        cJSON_Delete(json);
+        json_free(json);
         return;
     }
 
 
-    cJSON_AddStringToObject(json, "uuid", id);
-    cJSON_AddStringToObject(json, "createdAt", date);
-    cJSON_AddStringToObject(json, "updatedAt", date);
-    cJSON_AddStringToObject(json, "gameState", game_state);
+    json_object_add_string(json, "uuid", id);
+    json_object_add_string(json, "createdAt", date);
+    json_object_add_string(json, "updatedAt", date);
+    json_object_add_string(json, "gameState", game_state);
 
-    char *json_str = cJSON_Print(json);
+    char *json_str = json_print(json);
 
     send_json_response(client_fd, 201, json_str);
-    cJSON_free(json_str);
-    cJSON_Delete(json);
+    free(json_str);
+    json_free(json);
 
 }
 
 void handle_game_update(int client_fd, HttpRequest *req){
-    cJSON *json = cJSON_Parse(req->body);
+    Json *json = json_parse(req->body);
     if(!json){
         send_json_response(client_fd, ERR_BADREQ, "{\"code\": 400, \"message\": \"Error while parsing json\"}");
         return;
@@ -88,7 +89,7 @@ void handle_game_update(int client_fd, HttpRequest *req){
 
     if(!exists(id)){
         send_json_response(client_fd, ERR_NOTFOUND, "{\"code\": 404, \"message\": \"Resource not found.\"}");
-        cJSON_Delete(json);
+        json_free(json);
         return;
     }
 
@@ -108,30 +109,30 @@ void handle_game_update(int client_fd, HttpRequest *req){
 
     if(execute_sql_with_placeholders(sql, params, 6) != 0){
         send_json_response(client_fd, ERR_INTERR, "{\"code\": 500, \"message\": \"DB error\"}");
-        cJSON_Delete(json);
+        json_free(json);
         return;
     }
 
 
-    cJSON_AddStringToObject(json, "uuid", id);
-    cJSON_AddStringToObject(json, "updatedAt", date);
-    cJSON_AddStringToObject(json, "gameState", game_state);
+    json_object_add_string(json, "uuid", id);
+    json_object_add_string(json, "updatedAt", date);
+    json_object_add_string(json, "gameState", game_state);
 
     DBResult *result = db_query("SELECT created_at FROM games WHERE id = ?", (const char**){&id}, 1);
     if(!result){
         send_json_response(client_fd, ERR_INTERR, "{\"code\": 500, \"message\": \"DB error\"}");
-        cJSON_Delete(json);
+        json_free(json);
         return;
     }
 
-    cJSON_AddStringToObject(json, "createdAt", result->rows[0][0]);
+    json_object_add_string(json, "createdAt", result->rows[0][0]);
 
-    char *json_str = cJSON_Print(json);
+    char *json_str = json_print(json);
 
     free_result(result);
     send_json_response(client_fd, 201, json_str);
-    cJSON_free(json_str);
-    cJSON_Delete(json);
+    free(json_str);
+    json_free(json);
 }
 
 void handle_get_game(int client_fd, HttpRequest *req){
@@ -140,13 +141,13 @@ void handle_get_game(int client_fd, HttpRequest *req){
         send_json_response(client_fd, ERR_NOTFOUND, "{\"code\": 404, \"message\": \"Resource not found.\"}");
         return;
     }
-    cJSON *json = get_game(client_fd, id);
-    char *json_str = cJSON_Print(json);
+    Json *json = get_game(client_fd, id);
+    char *json_str = json_print(json);
 
     send_json_response(client_fd, OK_OK, json_str);
 
-    cJSON_free(json_str);
-    cJSON_Delete(json);
+    free(json_str);
+    json_free(json);
 }
 
 void handle_list_games(int client_fd, HttpRequest *req __attribute__((unused))){
@@ -158,7 +159,7 @@ void handle_list_games(int client_fd, HttpRequest *req __attribute__((unused))){
     }
 
 
-    cJSON *json_array = cJSON_CreateArray();
+    Json *json_array = json_create_array();
     if(!json_array){
         free_result(result);
         send_json_response(client_fd, ERR_INTERR, "{\"code\": 500, \"message\": \"Internal server error\"}");
@@ -166,16 +167,16 @@ void handle_list_games(int client_fd, HttpRequest *req __attribute__((unused))){
     }
 
     for(int i = 0; i < result->num_rows; i++){
-        cJSON *game = get_game(client_fd, result->rows[0][0]);
+        Json *game = get_game(client_fd, result->rows[0][0]);
         if(!game) continue;
-        cJSON_AddItemToArray(json_array, game);
+        json_array_add(json_array, game);
     }
 
 
-    char *json_str = cJSON_Print(json_array);
+    char *json_str = json_print(json_array);
     send_json_response(client_fd, OK_OK, json_str);
-    cJSON_Delete(json_array);
-    cJSON_free(json_str);
+    json_free(json_array);
+    free(json_str);
     free_result(result);
 }
 

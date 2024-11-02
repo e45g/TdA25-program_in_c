@@ -7,7 +7,6 @@
 #include <unistd.h>
 
 #include "utils.h"
-#include "lib/cJSON/cJSON.h"
 
 void logg(long line, const char *file, const char *func, const char *format, ...){
     printf("LOG: [%s:%ld %s] ", file, line, func);
@@ -56,34 +55,29 @@ const char *get_public_dir(void){
     return dir ? dir : "./public";
 }
 
-const char *cjson_get_string(cJSON *json, char *key){
-    cJSON *value = cJSON_GetObjectItemCaseSensitive(json, key);
-
-    if(cJSON_IsString(value) && value->valuestring != NULL){
-        return value->valuestring;
-    }
-
-    return NULL;
+/*
+*   Pseudo random number generator by Terry A. Davis
+*/
+unsigned int get_num() {
+    unsigned int i;
+    __asm__ __volatile__ (
+        "RDTSC\n"
+        "MOV %%EAX, %%EAX\n"
+        "SHL $32, %%RDX\n"
+        "ADD %%RDX, %%RAX\n"
+        : "=a" (i)
+        :
+        : "%rdx"
+    );
+    return i;
 }
-
-int cjson_get_number(cJSON *json, char *key){
-    cJSON *value = cJSON_GetObjectItemCaseSensitive(json, key);
-
-    if(cJSON_IsNumber(value)){
-        return cJSON_GetNumberValue(value);
-    }
-
-    return 0;
-}
-
 
 void generate_id(char *buffer) {
     char charset[] = "abcdefghijklmnopqrstuvwxyz0123456789";
-    static int call_count = 0;
-    srand((unsigned int)time(NULL) ^ (getpid() << 16) ^ call_count++);
+    int charset_len = strlen(charset);
 
     for (int i = 0; i < 32; i++) {
-        buffer[i] = charset[rand() % strlen(charset)];
+        buffer[i] = charset[get_num() % charset_len];
     }
     buffer[32] = '\0';
 }

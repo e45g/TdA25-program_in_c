@@ -16,6 +16,7 @@
 #include "db.h"
 #include "routes.h"
 #include "utils.h"
+#include "json/json.h"
 
 Server server;
 MimeEntry mime_types[] = {
@@ -356,7 +357,6 @@ void handle_sigint(int sig) {
 }
 
 int main(void) {
-    srand(time(NULL));
     setvbuf(stdout, NULL, _IONBF, 0);
     signal(SIGINT, handle_sigint);
 
