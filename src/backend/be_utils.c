@@ -125,9 +125,9 @@ Json *get_game(int client_fd, const char *id){
     //
 
 
-    Json *json_board = json_create_array();
+    Json *json_board = json_create_array(0);
     for(int i = 0; i < 15; i++){
-        Json *row_array = json_create_array();
+        Json *row_array = json_create_array(0);
         for(int j = 0; j < 15; j++){
             char value = rows[0][5][i*15+j];
             char value_str[2] = {value, '\0'};

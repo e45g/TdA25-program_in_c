@@ -159,7 +159,7 @@ void handle_list_games(int client_fd, HttpRequest *req __attribute__((unused))){
     }
 
 
-    Json *json_array = json_create_array();
+    Json *json_array = json_create_array(0);
     if(!json_array){
         free_result(result);
         send_json_response(client_fd, ERR_INTERR, "{\"code\": 500, \"message\": \"Internal server error\"}");

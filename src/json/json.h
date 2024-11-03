@@ -26,8 +26,9 @@ typedef struct Json{
         char *string;
 
         struct {
-            struct Json *element;
-            struct Json *next;
+            struct Json **elements;
+            size_t size;
+            size_t capacity;
         } array;
 
         struct {
@@ -40,7 +41,7 @@ typedef struct Json{
 } Json;
 
 Json *json_create_object();
-Json *json_create_array();
+Json *json_create_array(size_t initial_capacity);
 Json *json_create_string(const char *string);
 Json *json_create_number(double number);
 Json *json_create_null();
