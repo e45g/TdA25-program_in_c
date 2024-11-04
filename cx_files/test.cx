@@ -4,6 +4,8 @@
 
 <html>
 </body>
-...
+{{
+    fast_strcat(output, "ahoj");
+}}
 <body>
 </html>

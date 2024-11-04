@@ -112,7 +112,7 @@ void json_free(Json *json){
         }
 
         case JSON_ARRAY: {
-            for(int i = 0; i < json->value.array.size; ++i){
+            for(size_t i = 0; i < json->value.array.size; ++i){
                 json_free(json->value.array.elements[i]);
             }
             free(json->value.array.elements);

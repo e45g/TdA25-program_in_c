@@ -8,6 +8,8 @@
 #include "backend/api.h"
 #include "utils.h"
 
+#include "cxc/test.h"
+
 extern Server server;
 
 int match_route(const char *route, const char *handle) {
@@ -117,6 +119,13 @@ void handle_test(int client_fd, HttpRequest *req __attribute__((unused))) {
     send_string(client_fd, "look at em");
 }
 
+void handle_cxc(int client_fd, HttpRequest *req){
+    TestProps props = {0};
+    char *x = render_test(&props);
+    send_string(client_fd, x);
+    free(x);
+}
+
 void load_routes(void) {
     add_route("GET", "/", handle_root);
     add_route("GET", "/api", handle_api);
@@ -128,4 +137,5 @@ void load_routes(void) {
     add_route("GET", "/api/v1/games", handle_list_games);
 
     add_route("GET", "/test", handle_test);
+    add_route("GET", "/test2", handle_cxc);
 }

@@ -1,4 +1,5 @@
 #include "%%NAME%%.h"
+#include "cx.h"
 #include <stdlib.h>
 #include <string.h>
 %%PREPEND%%
