@@ -2,10 +2,16 @@
     char p;
 })
 
+#include <stdio.h>
+
 <html>
 </body>
 {{
-    fast_strcat(output, "ahoj");
+    char a[5][5] = {"yo", "man", "idk", "what", "to"};
+    for(int i = 0; i < 100; i++){
+        strnum(output, rand() % 100);
+        fast_strcat(output, " ");
+    }
 }}
 <body>
 </html>

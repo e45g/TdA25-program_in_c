@@ -146,7 +146,7 @@ int save_file(char *path, char *buf){
 }
 
 int generate(FILE *f, const char *filename, long length, char *ctemp, char *htemp){
-    response_length = 0;
+    response_length = 256; // TODO : Fix it
     char *content;
     char *ptr;
     char props_name[MAX_NAME] = {0};
