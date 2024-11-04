@@ -85,15 +85,21 @@ Json *json_create_object(){
     return json;
 }
 
-Json *json_create_array(){
-    Json *json = calloc(1, sizeof(Json));
-    if(!json) return NULL;
+Json *json_create_array(size_t initial_capacity){
+    Json *array = malloc(sizeof(Json));
+    if(!array) return NULL;
 
-    json->type = JSON_ARRAY;
-    json->value.array.next = NULL;
-    json->value.array.element = NULL;
+    array->type = JSON_ARRAY;
+    array->value.array.size = 0;
+    array->value.array.capacity = initial_capacity > 0 ? initial_capacity : 16;
+    array->value.array.elements = malloc(array->value.array.capacity * sizeof(Json*));
+    if(!array->value.array.elements){
+        free(array);
+        return NULL;
+    }
 
-    return json;
+
+    return array;
 }
 
 void json_free(Json *json){
@@ -106,12 +112,10 @@ void json_free(Json *json){
         }
 
         case JSON_ARRAY: {
-            Json *current = json->value.array.element;
-            while(current){
-                Json *next = current->value.array.next;
-                json_free(current);
-                current = next;
+            for(size_t i = 0; i < json->value.array.size; ++i){
+                json_free(json->value.array.elements[i]);
             }
+            free(json->value.array.elements);
             break;
         }
 
@@ -134,17 +138,14 @@ void json_free(Json *json){
 }
 
 int json_array_add(Json *array, Json *value){
-    if(array->type != JSON_ARRAY || !array) return -1;
+    if(!json_is_array(array)) return -1;
 
-    if(!array->value.array.element){
-        array->value.array.element = value;
-    } else {
-        Json *current = array->value.array.element;
-        while(current->value.array.next){
-            current = current->value.array.next;
-        }
-        current->value.array.next = value;
+    if(array->value.array.size >= array->value.array.capacity){
+        array->value.array.capacity *= 2;
+        array->value.array.elements = realloc(array->value.array.elements, array->value.array.capacity * sizeof(Json*));
     }
+
+    array->value.array.elements[array->value.array.size++] = value;
 
     return 0;
 }
@@ -199,14 +200,9 @@ Json *json_parse(const char *json_str){
 }
 
 Json *json_array_get(Json *array, size_t index){
-    if(!json_is_array(array) || !array->value.array.element) return NULL;
-
-    Json *current = array->value.array.element;
-    for(size_t i = 0; i < index; i++){
-        current = current->value.array.next;
-        if(!current) return NULL;
-    }
-    return current;
+    if(!json_is_array(array)) return NULL;
+    if(index > array->value.array.size) return NULL;
+    return array->value.array.elements[index];
 }
 
 Json *json_object_get(Json *object, const char *key){

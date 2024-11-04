@@ -1,4 +1,5 @@
 #include <ctype.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -6,24 +7,7 @@
 #include "json.h"
 #include "json_utils.h"
 
-char *escape_string(const char *str){
-    char *escaped = calloc(strlen(str)*2+1, sizeof(char));
-    if(!escaped) return NULL;
-
-    char *p = escaped;
-
-    while(*str){
-        if(*str == '\"' || *str == '\\'){
-            *p++ = '\\';
-        }
-        *p++ = *str++;
-    }
-    *p = '\0';
-
-    return escaped;
-}
-
-const char *skip_whitespace(const char *str){
+static inline const char *skip_whitespace(const char *str){
     while(*str && isspace(*str)){
         str++;
     }
@@ -36,7 +20,7 @@ int ensure_buffer_size(char **buffer, size_t *max_size, size_t required_space){
         return -1;
     }
     if(required_space >= *max_size){
-        *max_size = required_space + 1;
+        *max_size = required_space * 2;
         char *new_buffer = realloc(*buffer, *max_size);
         if(!new_buffer){
             perror("ensure_buffer_size failed.");
@@ -47,24 +31,46 @@ int ensure_buffer_size(char **buffer, size_t *max_size, size_t required_space){
     return 0;
 }
 
+void append_literal(char **buffer, size_t *pos, size_t *max_size, const char *literal){
+    size_t len = strlen(literal);
+    ensure_buffer_size(buffer, max_size, *pos + len);
+    memcpy(*buffer + *pos, literal, len);
+    *pos += len;
+}
+
+void escape_and_append_string(char **buffer, size_t *pos, size_t *max_size, const char *str){
+    ensure_buffer_size(buffer, max_size, *pos + 2);
+    (*buffer)[(*pos)++] = '"';
+    while(*str){
+        if(*str == '"' || *str == '\\'){
+            ensure_buffer_size(buffer, max_size, *pos + 2);
+            (*buffer)[(*pos)++] = '\\';
+            (*buffer)[(*pos)++] = *str++;
+        }
+        else {
+            ensure_buffer_size(buffer, max_size, *pos + 1);
+            (*buffer)[(*pos)++] = *str++;
+        }
+    }
+    ensure_buffer_size(buffer, max_size, *pos + 1);
+    (*buffer)[(*pos)++] = '"';
+}
+
 void json_to_string(const Json *json, char **buffer, size_t *pos, size_t *max_size){
     if(!json) return;
     switch (json->type) {
         case JSON_NULL: {
-            ensure_buffer_size(buffer, max_size, *pos + 4);
-            *pos += snprintf(*buffer + *pos, *max_size - *pos, "null");
+            append_literal(buffer, pos, max_size, "null");
             break;
         }
 
         case JSON_TRUE: {
-            ensure_buffer_size(buffer, max_size, *pos + 4);
-            *pos += snprintf(*buffer + *pos, *max_size - *pos, "true");
+            append_literal(buffer, pos, max_size, "true");
             break;
         }
 
         case JSON_FALSE: {
-            ensure_buffer_size(buffer, max_size, *pos + 5);
-            *pos += snprintf(*buffer + *pos, *max_size - *pos, "false");
+            append_literal(buffer, pos, max_size, "false");
             break;
         }
 
@@ -75,23 +81,17 @@ void json_to_string(const Json *json, char **buffer, size_t *pos, size_t *max_si
         }
 
         case JSON_STRING: {
-            char *escaped = escape_string(json->value.string);
-            size_t escaped_len = strlen(escaped) + 2;
-            ensure_buffer_size(buffer, max_size, *pos + escaped_len);
-            *pos += snprintf(*buffer + *pos, *max_size - *pos, "\"%s\"", escaped);
-            free(escaped);
+            escape_and_append_string(buffer, pos, max_size, json->value.string);
             break;
         }
 
         case JSON_ARRAY: {
             ensure_buffer_size(buffer, max_size, *pos + 1);
             (*buffer)[(*pos)++] = '[';
-            Json *element = json->value.array.element;
-            while(element){
-                json_to_string(element, buffer, pos, max_size);
 
-                element = element->value.array.next;
-                if(element){
+            for(size_t i = 0; i < json->value.array.size; ++i){
+                json_to_string(json->value.array.elements[i], buffer, pos, max_size);
+                if(i < json->value.array.size - 1){
                     ensure_buffer_size(buffer, max_size, *pos + 1);
                     (*buffer)[(*pos)++] = ',';
                 }
@@ -107,11 +107,8 @@ void json_to_string(const Json *json, char **buffer, size_t *pos, size_t *max_si
             (*buffer)[(*pos)++] = '{';
             Json *current = json->value.object.next;
             while(current){
-                char *escaped_key = escape_string(current->value.object.key);
-                size_t escaped_len = strlen(escaped_key) + 4;
-                ensure_buffer_size(buffer, max_size, *pos + escaped_len);
-                *pos += snprintf(*buffer + *pos, *max_size - *pos, "\"%s\": ", escaped_key);
-                free(escaped_key);
+                escape_and_append_string(buffer, pos, max_size, current->value.object.key);
+                append_literal(buffer, pos, max_size, ": ");
                 json_to_string(current->value.object.value, buffer, pos, max_size);
 
                 current = current->value.object.next;
@@ -262,7 +259,7 @@ Json *parse_object(const char **str){
 }
 
 Json *parse_array(const char **str){
-    Json *array = json_create_array();
+    Json *array = json_create_array(0);
     if(!array) return NULL;
 
     *str = skip_whitespace(*str);
