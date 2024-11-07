@@ -151,7 +151,6 @@ void handle_get_game(int client_fd, HttpRequest *req){
 }
 
 void handle_list_games(int client_fd, HttpRequest *req __attribute__((unused))){
-    // It's slower but who cares
     DBResult *result = db_query("SELECT id FROM games;", NULL, 0);
     if(!result){
         send_json_response(client_fd, ERR_INTERR, "{\"code\": 500, \"message\": \"Internal server error\"}");

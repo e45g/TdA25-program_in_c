@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <signal.h>
 #include <sys/epoll.h>
 #include <stdlib.h>
@@ -16,7 +17,6 @@
 #include "db.h"
 #include "routes.h"
 #include "utils.h"
-#include "json/json.h"
 
 Server server;
 MimeEntry mime_types[] = {
@@ -106,24 +106,61 @@ void send_string(int client_fd, char *str) {
     send(client_fd, response, strlen(response), 0);
 }
 
+
+
 void send_json_response(int client_fd, ResponseStatus status, char *json) {
     ResponseInfo info = get_response_info(status);
-    ssize_t response_len = strlen(json) + 256;
+    ssize_t json_len = strlen(json);
 
-char *response = malloc(response_len);
-    if(!response){
-        send_error_response(client_fd, ERR_INTERR);
-    }
-
-    snprintf(response, response_len,
+    char headers[1024] = {0};
+    int headers_len = snprintf(headers, sizeof(headers),
              "HTTP/1.1 %d %s\r\n"
              "Content-Type: application/json\r\n"
              "Content-Length: %zu\r\n"
-             "Connection: close\r\n\r\n%s",
-             info.status, info.message, strlen(json), json);
+             "Connection: keep-alive\r\n\r\n",
+             info.status, info.message, json_len);
 
-    send(client_fd, response, strlen(response), 0);
-    free(response);
+    // Send headers
+    ssize_t total_sent = 0;
+    while (total_sent < headers_len) {
+        ssize_t sent = write(client_fd, headers + total_sent, headers_len - total_sent);
+        if (sent == -1) {
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                continue;
+            } else {
+                LOG("send_json_response headers sent = -1");
+                send_error_response(client_fd, ERR_INTERR);
+                return;
+            }
+        }
+        total_sent += sent;
+    }
+
+    ssize_t offset = 0;
+    const ssize_t CHUNK_SIZE = 16384;
+    while (offset < json_len) {
+        ssize_t remaining = json_len - offset;
+        ssize_t chunk_size = (remaining > CHUNK_SIZE) ? CHUNK_SIZE : remaining;
+        ssize_t sent_chunk = 0;
+        while (sent_chunk < chunk_size) {
+            ssize_t sent = write(client_fd, json + offset + sent_chunk, chunk_size - sent_chunk);
+            if (sent == -1) {
+                if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                    continue;
+                } else {
+                    LOG("send_json_response JSON sent = -1");
+                    send_error_response(client_fd, ERR_INTERR);
+                    return;
+                }
+            }
+            sent_chunk += sent;
+        }
+        offset += sent_chunk;
+    }
+
+    if (offset != json_len) {
+        send_error_response(client_fd, ERR_INTERR);
+    }
 }
 
 int validate_request(const HttpRequest *req) {
@@ -273,10 +310,10 @@ int serve_file(int client_fd, const char *path) {
     if (file_fd == -1) {
         snprintf(p, 512, "%s/%s", get_public_dir(), path);
         file_fd = open(p, O_RDONLY);
-        LOG("%s", p);
+        // LOG("%s", p);
 
         if (file_fd == -1) {
-            LOG("Not found");
+            // LOG("Not found");
             send_error_response(client_fd, ERR_NOTFOUND);
             return -1;
         }
@@ -315,7 +352,7 @@ void handle_client(int client_fd) {
         return;
     }
     buffer[bytes_recieved] = '\0';
-    LOG(buffer); // FLAG;
+    // LOG(buffer); // FLAG;
 
     HttpRequest req = {0};
     int parse_result = parse_http_req(client_fd, buffer, &req);
@@ -425,6 +462,7 @@ int main(void) {
             else{
                 int client_fd = events[i].data.fd;
                 handle_client(client_fd);
+
                 epoll_ctl(epoll_fd, EPOLL_CTL_DEL, client_fd, NULL);
                 close(client_fd);
             }
