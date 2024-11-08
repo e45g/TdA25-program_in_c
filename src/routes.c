@@ -133,7 +133,4 @@ void load_routes(void) {
 
     add_route("GET", "/test", handle_test);
     add_route("GET", "/hello", handle_hello);
-
-
-
 }
