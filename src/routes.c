@@ -96,6 +96,9 @@ void handle_root(int client_fd, HttpRequest *req __attribute__((unused))) {
     send_string(client_fd, "Hello TdA");
 }
 
+void handle_root(int client_fd, HttpRequest *req __attribute__((unused))) {
+    serve_file(client_fd, "test/a.html");
+}
 void handle_test(int client_fd, HttpRequest *req __attribute__((unused))) {
     char date[64];
     get_current_time(date, 64, -300);
@@ -129,4 +132,8 @@ void load_routes(void) {
     add_route("GET", "/api/v1/games", handle_list_games);
 
     add_route("GET", "/test", handle_test);
+    add_route("GET", "/hello", handle_hello);
+
+
+
 }
