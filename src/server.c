@@ -106,21 +106,26 @@ void send_string(int client_fd, char *str) {
     send(client_fd, response, strlen(response), 0);
 }
 
-
-
 void send_json_response(int client_fd, ResponseStatus status, char *json) {
     ResponseInfo info = get_response_info(status);
     ssize_t json_len = strlen(json);
+
+    size_t compressed_len = 0;
+    char *compressed_json = compress_data(json, json_len, &compressed_len);
 
     char headers[1024] = {0};
     int headers_len = snprintf(headers, sizeof(headers),
              "HTTP/1.1 %d %s\r\n"
              "Content-Type: application/json\r\n"
              "Content-Length: %zu\r\n"
-             "Connection: keep-alive\r\n\r\n",
-             info.status, info.message, json_len);
+             "Connection: keep-alive\r\n",
+             info.status, info.message, (compressed_json ? compressed_len : (size_t)json_len));
 
-    // Send headers
+    if(compressed_json){
+        headers_len += snprintf(headers+headers_len, sizeof(headers), "Content-Encoding: gzip\r\n");
+    }
+    headers_len += snprintf(headers+headers_len, sizeof(headers), "\r\n");
+
     ssize_t total_sent = 0;
     while (total_sent < headers_len) {
         ssize_t sent = write(client_fd, headers + total_sent, headers_len - total_sent);
@@ -129,6 +134,7 @@ void send_json_response(int client_fd, ResponseStatus status, char *json) {
                 continue;
             } else {
                 LOG("send_json_response headers sent = -1");
+                if(compressed_json) free(compressed_json);
                 send_error_response(client_fd, ERR_INTERR);
                 return;
             }
@@ -138,17 +144,18 @@ void send_json_response(int client_fd, ResponseStatus status, char *json) {
 
     ssize_t offset = 0;
     const ssize_t CHUNK_SIZE = 16384;
-    while (offset < json_len) {
-        ssize_t remaining = json_len - offset;
+    while (offset < (compressed_json ? (ssize_t)compressed_len : json_len)) {
+        ssize_t remaining = (compressed_json ? compressed_len : (size_t)json_len)  - offset;
         ssize_t chunk_size = (remaining > CHUNK_SIZE) ? CHUNK_SIZE : remaining;
         ssize_t sent_chunk = 0;
         while (sent_chunk < chunk_size) {
-            ssize_t sent = write(client_fd, json + offset + sent_chunk, chunk_size - sent_chunk);
+            ssize_t sent = write(client_fd, (compressed_json ? compressed_json : json) + offset + sent_chunk, chunk_size - sent_chunk);
             if (sent == -1) {
                 if (errno == EAGAIN || errno == EWOULDBLOCK) {
                     continue;
                 } else {
                     LOG("send_json_response JSON sent = -1");
+                    if(compressed_json) free(compressed_json);
                     send_error_response(client_fd, ERR_INTERR);
                     return;
                 }
@@ -158,8 +165,11 @@ void send_json_response(int client_fd, ResponseStatus status, char *json) {
         offset += sent_chunk;
     }
 
+    if(compressed_json) free(compressed_json);
+
     if (offset != json_len) {
         send_error_response(client_fd, ERR_INTERR);
+        return;
     }
 }
 
