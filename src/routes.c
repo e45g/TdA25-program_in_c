@@ -96,7 +96,7 @@ void handle_root(int client_fd, HttpRequest *req __attribute__((unused))) {
     send_string(client_fd, "Hello TdA");
 }
 
-void handle_root(int client_fd, HttpRequest *req __attribute__((unused))) {
+void handle_hello(int client_fd, HttpRequest *req __attribute__((unused))) {
     serve_file(client_fd, "test/a.html");
 }
 void handle_test(int client_fd, HttpRequest *req __attribute__((unused))) {
