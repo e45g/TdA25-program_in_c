@@ -151,3 +151,76 @@ Json *get_game(int client_fd, const char *id){
     return json;
 }
 
+
+
+Json *get_all_games(int client_fd) {
+    // Fetch all relevant game data at once
+    DBResult *result = db_query("SELECT id, created_at, updated_at, name, difficulty, game_state, board FROM games", NULL, 0);
+    if (!result) {
+        send_json_response(client_fd, ERR_INTERR, "{\"code\": 500, \"message\": \"DB error\"}");
+        return NULL;
+    }
+
+    // Create a JSON array to store all the games
+    Json *json_all_games = json_create_array(0);
+    if (!json_all_games) {
+        send_json_response(client_fd, ERR_INTERR, "{\"code\": 500, \"message\": \"Internal Error\"}");
+        free_result(result);
+        return NULL;
+    }
+
+    char ***rows = result->rows;
+    int num_rows = result->num_rows;
+
+    // Process each game row
+    for (int i = 0; i < num_rows; i++) {
+        Json *json_game = json_create_object();
+        if (!json_game) {
+            send_json_response(client_fd, ERR_INTERR, "{\"code\": 500, \"message\": \"Internal Error\"}");
+            free_result(result);
+            return NULL;
+        }
+
+        // Process the game board
+        Json *json_board = json_create_array(0);
+        if (!json_board) {
+            send_json_response(client_fd, ERR_INTERR, "{\"code\": 500, \"message\": \"Internal Error\"}");
+            free_result(result);
+            return NULL;
+        }
+
+        // Process each row of the board
+        const char *board = rows[i][6]; // The board string is in column 6
+        for (int row = 0; row < 15; row++) {
+            Json *row_array = json_create_array(0);
+            if (!row_array) {
+                send_json_response(client_fd, ERR_INTERR, "{\"code\": 500, \"message\": \"Internal Error\"}");
+                free_result(result);
+                return NULL;
+            }
+
+            for (int col = 0; col < 15; col++) {
+                char value = board[row * 15 + col];
+                Json *str = json_create_string(value == ' ' ? "" : (char[]){value, '\0'});
+                json_array_add(row_array, str);
+            }
+            json_array_add(json_board, row_array);
+        }
+
+        // Add the game data to the JSON object
+        json_object_add_string(json_game, "uuid", rows[i][0]);
+        json_object_add_string(json_game, "createdAt", rows[i][1]);
+        json_object_add_string(json_game, "updatedAt", rows[i][2]);
+        json_object_add_string(json_game, "name", rows[i][3]);
+        json_object_add_string(json_game, "difficulty", rows[i][4]);
+        json_object_add_string(json_game, "game_state", rows[i][5]);
+        json_object_add(json_game, "board", json_board);
+
+        // Add the game to the overall JSON array
+        json_array_add(json_all_games, json_game);
+    }
+
+    free_result(result);
+    return json_all_games;
+}
+
