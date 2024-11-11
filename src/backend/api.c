@@ -39,7 +39,7 @@ void handle_game_creation(int client_fd, HttpRequest *req){
 
     ResponseInfo result = get_params(json, &name, &difficulty, board_array, board, &turn, &round);
     if(result.status != OK_OK){
-        LOG("GET PARAMS NOT OK.");
+        LOG("GET PARAMS NOT OK. %d %s", result.status, result.message);
         json_free(json);
         send_json_error(client_fd, (ResponseInfo){result.status, result.message});
         return;
@@ -260,7 +260,7 @@ void handle_list_games(int client_fd, HttpRequest *req __attribute__((unused))) 
             return;
         }
 
-        Json *board = load_board(result->rows[0][6]);
+        Json *board = load_board(result->rows[i][6]);
         if(!board){
             send_json_error(client_fd, (ResponseInfo){ERR_INTERR, ":("});
             free_result(result);

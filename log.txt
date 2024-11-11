@@ -1,1 +1,43 @@
-[2024-11-11 19:57:26] LOG: [src/server.c:400 handle_sigint] Shutting down server... (2) : Success
+[2024-11-11 21:35:10] LOG: [src/db.c:32 db_init] Database initialized successfully: games.db : Success
+[2024-11-11 21:35:10] LOG: [src/server.c:468 main] Server listening on port 1444 : No such file or directory
+[2024-11-11 21:35:10] LOG: [src/server.c:471 main] Routes loaded. : Success
+[2024-11-11 21:35:10] LOG: [src/routes.c:80 print_routes] Route - GET: /log : Success
+[2024-11-11 21:35:10] LOG: [src/routes.c:80 print_routes] Route - GET: /game/* : Success
+[2024-11-11 21:35:10] LOG: [src/routes.c:80 print_routes] Route - GET: /game : Success
+[2024-11-11 21:35:10] LOG: [src/routes.c:80 print_routes] Route - GET: /test : Success
+[2024-11-11 21:35:10] LOG: [src/routes.c:80 print_routes] Route - GET: /api/v1/games : Success
+[2024-11-11 21:35:10] LOG: [src/routes.c:80 print_routes] Route - GET: /api/v1/games/* : Success
+[2024-11-11 21:35:10] LOG: [src/routes.c:80 print_routes] Route - DELETE: /api/v1/games/* : Success
+[2024-11-11 21:35:10] LOG: [src/routes.c:80 print_routes] Route - PUT: /api/v1/games/* : Success
+[2024-11-11 21:35:10] LOG: [src/routes.c:80 print_routes] Route - POST: /api/v1/games : Success
+[2024-11-11 21:35:10] LOG: [src/routes.c:80 print_routes] Route - GET: /api : Success
+[2024-11-11 21:35:10] LOG: [src/routes.c:80 print_routes] Route - GET: / : Success
+[2024-11-11 21:35:16] LOG: [src/server.c:372 handle_client] POST /api/v1/games HTTP/1.1
+Host: localhost:1444
+User-Agent: python-requests/2.32.3
+Accept-Encoding: gzip, deflate
+Accept: */*
+Connection: keep-alive
+Content-Length: 1010
+Content-Type: application/json
+
+{"name": "PetrP vs Michi - 0", "difficulty": "medium", "board": [["X", "", "", "", "", "", "", "", "", "", "", "", "", "", ""], ["", "", "", "", "", "", "X", "O", "", "", "", "", "", "", ""], ["", "", "", "", "", "", "O", "O", "", "", "", "", "", "", ""], ["", "", "", "", "", "O", "X", "O", "", "", "", "", "", "", ""], ["", "", "", "", "", "X", "X", "O", "", "", "", "", "", "", ""], ["", "", "", "", "", "O", "X", "", "", "", "", "", "", "", ""], ["", "", "", "", "", "X", "", "", "", "", "", "", "", "", ""], ["", "", "", "", "", "", "", "", "", "", "", "", "", "", ""], ["", "", "", "", "", "", "", "", "", "", "", "", "", "", ""], ["", "", "", "", "", "", "", "", "", "", "", "", "", "", ""], ["", "", "", "", "", "", "", "", "", "", "", "", "", "", ""], ["", "", "", "", "", "", "", "", "", "", "", "", "", "", ""], ["", "", "", "", "", "", "", "", "", "", "", "", "", "", ""], ["", "", "", "", "", "", "", "", "", "", "", "", "", "", ""], ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "X"]]} : Success
+[2024-11-11 21:35:16] LOG: [src/server.c:372 handle_client] POST /api/v1/games HTTP/1.1
+Host: localhost:1444
+User-Agent: python-requests/2.32.3
+Accept-Encoding: gzip, deflate
+Accept: */*
+Connection: keep-alive
+Content-Length: 1009
+Content-Type: application/json
+
+{"name": "PetrP vs Michi - 1", "difficulty": "medium", "board": [["", "", "", "", "", "", "", "", "", "", "", "", "", "", ""], ["", "", "", "", "", "", "X", "O", "", "", "", "", "", "", ""], ["", "", "", "", "", "", "O", "O", "", "", "", "", "", "", ""], ["", "", "", "", "", "O", "X", "O", "", "", "", "", "", "", ""], ["", "", "", "", "", "X", "X", "O", "", "", "", "", "", "", ""], ["", "", "", "", "", "O", "X", "", "", "", "", "", "", "", ""], ["", "", "", "", "", "X", "", "", "", "", "", "", "", "", ""], ["", "", "", "", "", "", "", "", "", "", "", "", "", "", ""], ["", "", "", "", "", "", "", "", "", "", "", "", "", "", ""], ["", "", "", "", "", "", "", "", "", "", "", "", "", "", ""], ["", "", "", "", "", "", "", "", "", "", "", "", "", "", ""], ["", "", "", "", "", "", "", "", "", "", "", "", "", "", ""], ["", "", "", "", "", "", "", "", "", "", "", "", "", "", ""], ["", "", "", "", "", "", "", "", "", "", "", "", "", "", ""], ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "X"]]} : No such file or directory
+[2024-11-11 21:35:16] LOG: [src/server.c:372 handle_client] GET /api/v1/games HTTP/1.1
+Host: localhost:1444
+User-Agent: python-requests/2.32.3
+Accept-Encoding: gzip, deflate
+Accept: */*
+Connection: keep-alive
+
+ : No such file or directory
+[2024-11-11 21:35:18] LOG: [src/server.c:400 handle_sigint] Shutting down server... (2) : No such file or directory

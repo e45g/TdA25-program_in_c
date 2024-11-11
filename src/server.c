@@ -424,6 +424,7 @@ int main(void) {
     if(result != 0) handle_critical_error("db_init failed", 0);
 
     db_exec("CREATE TABLE IF NOT EXISTS games (id TEXT PRIMARY KEY NOT NULL, created_at DATE NOT NULL, updated_at DATE, name TEXT NOT NULL, difficulty TEXT NOT NULL, game_state TEXT NOT NULL, board TEXT NOT NULL);", NULL, 0, NULL);
+    db_execute("DELETE FROM games;", NULL, 0);
 
     const int PORT = get_port();
     struct epoll_event ev, events[MAX_EVENTS];

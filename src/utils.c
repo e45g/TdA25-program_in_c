@@ -91,8 +91,8 @@ const char *get_public_dir(void){
 /*
 *   Pseudo random number generator by Terry A. Davis
 */
-unsigned int get_num() {
-    unsigned int i;
+unsigned long get_num() {
+    unsigned long i;
     __asm__ __volatile__ (
         "RDTSC\n"
         "MOV %%EAX, %%EAX\n"
@@ -102,7 +102,7 @@ unsigned int get_num() {
         :
         : "%rdx"
     );
-    return i + (rand()%16) * rand () % 16;
+    return (i * ((rand() % 230)+1) % ((rand() % 20)+1));
 }
 
 void generate_id(char *uuid) {
