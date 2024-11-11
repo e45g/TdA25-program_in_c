@@ -172,7 +172,7 @@ void handle_game_update(int client_fd, HttpRequest *req){
 
     char *json_str = json_print(json);
 
-    send_json_response(client_fd, 201, json_str);
+    send_json_response(client_fd, 200, json_str);
     free(json_str);
     free_result(r);
     json_free(json);
@@ -258,7 +258,7 @@ void handle_list_games(int client_fd, HttpRequest *req __attribute__((unused))) 
             return;
         }
 
-        Json *board = load_board(result->rows[0][5]);
+        Json *board = load_board(result->rows[0][6]);
         if(!board){
             send_json_error(client_fd, (ResponseInfo){ERR_INTERR, ":("});
             free_result(result);
