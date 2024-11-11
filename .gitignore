@@ -4,4 +4,4 @@ server
 src/cxc/*
 cxc
 *.db
-log.txt
+*.txt
