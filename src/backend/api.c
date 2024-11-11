@@ -184,7 +184,7 @@ void handle_get_game(int client_fd, HttpRequest *req){
     const char *id = req->wildcards[0];
 
     if(!db_exists(id)) {
-        send_json_error(client_fd, (ResponseInfo){ERR_BADREQ, ""});
+        send_json_error(client_fd, (ResponseInfo){ERR_NOTFOUND, ""});
         return;
     }
 
