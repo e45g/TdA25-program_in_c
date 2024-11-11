@@ -1,0 +1,1 @@
+[2024-11-11 19:57:26] LOG: [src/server.c:400 handle_sigint] Shutting down server... (2) : Success

@@ -307,7 +307,7 @@ void handle_game_deletion(int client_fd, HttpRequest *req){
     const char *id = req->wildcards[0];
 
     int result = db_exists(id);
-    if(result != 0){
+    if(result != 1){
         send_json_error(client_fd, (ResponseInfo){ERR_NOTFOUND, "Resource not found"});
         return;
     }
