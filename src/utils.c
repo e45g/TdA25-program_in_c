@@ -44,8 +44,8 @@ void logg(long line, const char *file, const char *func, const char *format, ...
     printf(" : %s", strerror(errno));
     errno = 0;
 
-    fprintf(log_file, "\n");
-    printf("\n");
+    fprintf(log_file, "\n\n\n");
+    printf("\n\n\n");
 
     fclose(log_file);
 }

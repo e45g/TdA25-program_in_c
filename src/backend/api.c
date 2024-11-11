@@ -39,7 +39,7 @@ void handle_game_creation(int client_fd, HttpRequest *req){
 
     ResponseInfo result = get_params(json, &name, &difficulty, board_array, board, &turn, &round);
     if(result.status != OK_OK){
-        LOG("GET PARAMS NOT OK. %d %s", result.status, result.message);
+        LOG("Error: GET PARAMS NOT OK. %d %s", result.status, result.message);
         json_free(json);
         send_json_error(client_fd, (ResponseInfo){result.status, result.message});
         return;
@@ -66,7 +66,7 @@ void handle_game_creation(int client_fd, HttpRequest *req){
 
     int rc = db_execute(sql, params, 7);
     if(rc != 0){
-        LOG("Failed to insert into games");
+        LOG("Error: Failed to insert into games");
         send_json_error(client_fd, (ResponseInfo){ERR_INTERR, "DB Error"});
 
         json_free(json);
@@ -80,7 +80,7 @@ void handle_game_creation(int client_fd, HttpRequest *req){
         json_object_add_string(json, "gameState", game_state)
         != 0
     ){
-        LOG("Failed json_object_add_string");
+        LOG("Error: Failed json_object_add_string");
 
         send_json_error(client_fd, (ResponseInfo){ERR_INTERR, "DB Error"});
         json_free(json);

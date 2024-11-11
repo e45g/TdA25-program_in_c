@@ -313,7 +313,7 @@ void http_req_free(HttpRequest *req) {
 int serve_file(int client_fd, const char *path) {
     int result = 0;
     char p[PATH_MAX];
-    LOG("%s", path);
+    LOG("\n%s", path);
 
     snprintf(p, PATH_MAX, "%s/%s", get_routes_dir(), path);
     int file_fd = open(p, O_RDONLY);
@@ -362,13 +362,13 @@ int serve_file(int client_fd, const char *path) {
 
 void handle_client(int client_fd) {
     char buffer[BUFFER_SIZE] = {0};
-    ssize_t bytes_recieved = recv(client_fd, buffer, BUFFER_SIZE - 1, 0);
+    ssize_t bytes_received = recv(client_fd, buffer, BUFFER_SIZE - 1, 0);
 
-    if (bytes_recieved < 0) {
+    if (bytes_received < 0) {
         LOG("RECV failed.");
         return;
     }
-    buffer[bytes_recieved] = '\0';
+    buffer[bytes_received] = '\0';
     LOG(buffer); // FLAG;
 
     HttpRequest req = {0};
