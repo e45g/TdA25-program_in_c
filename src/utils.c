@@ -102,7 +102,7 @@ unsigned int get_num() {
         :
         : "%rdx"
     );
-    return i;
+    return i + (rand()%16) * rand () % 16;
 }
 
 void generate_id(char *uuid) {

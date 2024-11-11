@@ -22,6 +22,7 @@ void handle_api(int client_fd, HttpRequest *req __attribute__((unused))) {
 void handle_game_creation(int client_fd, HttpRequest *req){
     Json *json = json_parse(req->body);
     if(!json){
+        LOG("Error parsing json: \n%s", req->body);
         send_json_error(client_fd, (ResponseInfo){ERR_BADREQ, "Error parsing json"});
         return;
     }
