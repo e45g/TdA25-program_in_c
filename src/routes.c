@@ -135,7 +135,8 @@ void load_routes(void) {
     add_route("GET", "/api/v1/games", handle_list_games);
 
     add_route("GET", "/test", handle_test);
-    add_route("GET", "/hello", handle_hello);
+    add_route("GET", "/game", handle_hello);
+    add_route("GET", "/game/*", handle_hello);
 
     add_route("GET", "/log", handle_log);
 

@@ -229,19 +229,18 @@ void handle_get_game(int client_fd, HttpRequest *req){
 
     char *json_str = json_print(response);
 
-    send_json_response(client_fd, 201, json_str);
+    send_json_response(client_fd, 200, json_str);
     free(json_str);
     json_free(response);
 }
 
 void handle_list_games(int client_fd, HttpRequest *req __attribute__((unused))) {
-    DBResult *result = db_query("SELECT id, created_at, updated_at, name, difficulty, game_state FROM games", NULL, 0);
+    DBResult *result = db_query("SELECT id, created_at, updated_at, name, difficulty, game_state, board FROM games", NULL, 0);
     if (!result) {
         LOG("DB error - list_games");
         send_json_error(client_fd, (ResponseInfo){ERR_INTERR, "DB Error"});
         return;
     }
-
 
     Json *response = json_create_array(0);
     if (!response) {
@@ -259,13 +258,21 @@ void handle_list_games(int client_fd, HttpRequest *req __attribute__((unused))) 
             return;
         }
 
+        Json *board = load_board(result->rows[0][5]);
+        if(!board){
+            send_json_error(client_fd, (ResponseInfo){ERR_INTERR, ":("});
+            free_result(result);
+            return;
+        }
+
         if (
             json_object_add_string(game_object, "uuid", result->rows[i][0]) ||
             json_object_add_string(game_object, "createdAt", result->rows[i][1]) ||
             json_object_add_string(game_object, "updatedAt", result->rows[i][2]) ||
             json_object_add_string(game_object, "name", result->rows[i][3]) ||
             json_object_add_string(game_object, "difficulty", result->rows[i][4]) ||
-            json_object_add_string(game_object, "game_state", result->rows[i][5])
+            json_object_add_string(game_object, "game_state", result->rows[i][5]) ||
+            json_object_add(game_object, "board", board)
         ) {
             json_free(game_object);
             json_free(response);
