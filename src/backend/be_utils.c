@@ -29,15 +29,25 @@ ResponseInfo get_params(Json *json, const char **name, const char **difficulty, 
     if(!json) return (ResponseInfo){ERR_BADREQ, "Bad json"};
 
     const char *json_name = json_object_get_string(json, "name");
-    if(!json_name) return (ResponseInfo){ERR_BADREQ, "Missing 'name'"};
+    if(!json_name)
+    {
+        LOG("Missing name");
+        return (ResponseInfo){ERR_BADREQ, "Missing 'name'"};
+    }
     *name = json_name;
 
     const char *json_difficulty = json_object_get_string(json, "difficulty");
-    if(!json_difficulty) return (ResponseInfo){ERR_BADREQ, "Missing 'difficulty'"};
+    if(!json_difficulty) {
+        LOG("Missing difficulty");
+        return (ResponseInfo){ERR_BADREQ, "Missing 'difficulty'"};
+    }
     *difficulty = json_difficulty;
 
     Json *json_board = json_object_get_array(json, "board");
-    if(!json_board) return (ResponseInfo){ERR_BADREQ, "Either 'board' is missing or is not an array"};
+    if(!json_board) {
+        LOG("Board missing or not an array");
+        return (ResponseInfo){ERR_BADREQ, "Either 'board' is missing or is not an array"};
+    }
 
     int x = 0;
     int o = 0;

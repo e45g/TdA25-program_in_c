@@ -38,6 +38,7 @@ void handle_game_creation(int client_fd, HttpRequest *req){
 
     ResponseInfo result = get_params(json, &name, &difficulty, board_array, board, &turn, &round);
     if(result.status != OK_OK){
+        LOG("GET PARAMS NOT OK.");
         json_free(json);
         send_json_error(client_fd, (ResponseInfo){result.status, result.message});
         return;
