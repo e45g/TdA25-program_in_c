@@ -1,0 +1,50 @@
+[2024-11-11 18:43:41] LOG: [src/db.c:32 db_init] Database initialized successfully: games.db : Success
+[2024-11-11 18:43:41] LOG: [src/server.c:467 main] Server listening on port 1444 : No such file or directory
+[2024-11-11 18:43:41] LOG: [src/server.c:470 main] Routes loaded. : Success
+[2024-11-11 18:43:41] LOG: [src/routes.c:80 print_routes] Route - GET: /log : Success
+[2024-11-11 18:43:41] LOG: [src/routes.c:80 print_routes] Route - GET: /hello : Success
+[2024-11-11 18:43:41] LOG: [src/routes.c:80 print_routes] Route - GET: /test : Success
+[2024-11-11 18:43:41] LOG: [src/routes.c:80 print_routes] Route - GET: /api/v1/games : Success
+[2024-11-11 18:43:41] LOG: [src/routes.c:80 print_routes] Route - GET: /api/v1/games/* : Success
+[2024-11-11 18:43:41] LOG: [src/routes.c:80 print_routes] Route - DELETE: /api/v1/games/* : Success
+[2024-11-11 18:43:41] LOG: [src/routes.c:80 print_routes] Route - PUT: /api/v1/games/* : Success
+[2024-11-11 18:43:41] LOG: [src/routes.c:80 print_routes] Route - POST: /api/v1/games : Success
+[2024-11-11 18:43:41] LOG: [src/routes.c:80 print_routes] Route - GET: /api : Success
+[2024-11-11 18:43:41] LOG: [src/routes.c:80 print_routes] Route - GET: / : Success
+[2024-11-11 18:43:42] LOG: [src/server.c:372 handle_client] GET /log HTTP/1.1
+Host: localhost:1444
+User-Agent: Mozilla/5.0 (Windows NT 10.0; rv:129.0) Gecko/20100101 Firefox/129.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/png,image/svg+xml,*/*;q=0.8
+Accept-Language: en-US,en;q=0.5
+Accept-Encoding: gzip, deflate, br, zstd
+DNT: 1
+Sec-GPC: 1
+Connection: keep-alive
+Upgrade-Insecure-Requests: 1
+Sec-Fetch-Dest: document
+Sec-Fetch-Mode: navigate
+Sec-Fetch-Site: none
+Sec-Fetch-User: ?1
+Priority: u=0, i
+
+ : Success
+[2024-11-11 18:43:42] LOG: [src/server.c:316 serve_file] ../log.txt : Success
+[2024-11-11 18:43:43] LOG: [src/server.c:372 handle_client] GET /log HTTP/1.1
+Host: localhost:1444
+User-Agent: Mozilla/5.0 (Windows NT 10.0; rv:129.0) Gecko/20100101 Firefox/129.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/png,image/svg+xml,*/*;q=0.8
+Accept-Language: en-US,en;q=0.5
+Accept-Encoding: gzip, deflate, br, zstd
+DNT: 1
+Sec-GPC: 1
+Connection: keep-alive
+Upgrade-Insecure-Requests: 1
+Sec-Fetch-Dest: document
+Sec-Fetch-Mode: navigate
+Sec-Fetch-Site: none
+Sec-Fetch-User: ?1
+Priority: u=0, i
+
+ : Success
+[2024-11-11 18:43:43] LOG: [src/server.c:316 serve_file] ../log.txt : Success
+[2024-11-11 18:43:44] LOG: [src/server.c:400 handle_sigint] Shutting down server... (2) : Success

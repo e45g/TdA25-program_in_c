@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -pg -Wall -Wextra -Isrc -Isrc/lib/cJSON -Isrc/cxc -lsqlite3
+CFLAGS = -Wall -Wextra -Isrc -Isrc/lib/cJSON -Isrc/cxc -lsqlite3
 SRC_DIR = src
 LIB_DIR = src/lib/cJSON
 SRCS = $(wildcard $(SRC_DIR)/*.c) $(wildcard $(LIB_DIR)/*.c) $(wildcard $(SRC_DIR)/*/*.c)

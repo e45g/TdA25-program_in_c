@@ -61,12 +61,12 @@ typedef struct
 } Server;
 
 void free_http_req(HttpRequest *req);
-int parse_http_req(int client_fd, const char *buffer, HttpRequest *http_req);
+int parse_http_req(const char *buffer, HttpRequest *http_req);
 int serve_file(int client_fd, const char *path);
 void handle_client(int client_fd);
 void handle_sigint(int sig);
 
-void send_json_response(int client_fd, ResponseStatus status, char *json);
+void send_json_response(int client_fd, ResponseStatus status, const char *json);
 void send_string(int client_fd, char *str);
 
 #endif

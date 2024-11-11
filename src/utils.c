@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <time.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,21 +9,51 @@
 
 #include "utils.h"
 
-void logg(long line, const char *file, const char *func, const char *format, ...){
-    printf("LOG: [%s:%ld %s] ", file, line, func);
+
+void logg(long line, const char *file, const char *func, const char *format, ...) {
+    time_t raw_time;
+    struct tm *time_info;
+    char time_buffer[20];
+
+    time(&raw_time);
+    time_info = localtime(&raw_time);
+    strftime(time_buffer, sizeof(time_buffer), "%Y-%m-%d %H:%M:%S", time_info);
+
+    FILE *log_file = fopen("log.txt", "a");
+    if (!log_file) {
+        perror("Unable to open log file");
+        return;
+    }
+
+    fprintf(log_file, "[%s] LOG: [%s:%ld %s] ", time_buffer, file, line, func);
+    printf("[%s] LOG: [%s:%ld %s] ", time_buffer, file, line, func);
 
     va_list args;
     va_start(args, format);
+
+    vfprintf(log_file, format, args);
+
+    va_end(args);
+    va_start(args, format);
+
     vprintf(format, args);
+
     va_end(args);
 
+    fprintf(log_file, " : %s", strerror(errno));
+    printf(" : %s", strerror(errno));
+    errno = 0;
+
+    fprintf(log_file, "\n");
     printf("\n");
+
+    fclose(log_file);
 }
 
 int load_env(const char *path){
     FILE *f = fopen(path, "r");
     if(!f){
-        LOG("Invalid .env file");
+        LOG("Failed to open .env");
         return -1;
     }
     char line[MAX_LINE_LENGTH];
@@ -33,11 +64,13 @@ int load_env(const char *path){
         char *value = strtok(NULL, "=");
 
         if(key && value){
-            setenv(key, value, 1);
+            int result = setenv(key, value, 1);
+            if(result != 0) LOG("setenv failed");
         }
 
     }
-    return 1;
+    fclose(f);
+    return 0;
 }
 
 int get_port(void){
@@ -72,29 +105,30 @@ unsigned int get_num() {
     return i;
 }
 
-void generate_id(char *buffer) {
-    char charset[] = "abcdefghijklmnopqrstuvwxyz0123456789";
-    int charset_len = strlen(charset);
-
-    for (int i = 0; i < 32; i++) {
-        buffer[i] = charset[get_num() % charset_len];
+void generate_id(char *uuid) {
+    const char *chars = "0123456789abcdef";
+    for (int i = 0; i < 36; i++) {
+        if (i == 8 || i == 13 || i == 18 || i == 23) {
+            uuid[i] = '-';
+        } else if (i == 14) {
+            uuid[i] = '4';
+        } else if (i == 19) {
+            uuid[i] = chars[(get_num() % 4) + 8];
+        } else {
+            uuid[i] = chars[get_num() % 16];
+        }
     }
-    buffer[32] = '\0';
+    uuid[36] = '\0';
+    printf("%s\n", uuid);
 }
 
+
 void get_current_time(char *buffer, size_t size, long offset) {
-    struct timeval tv;
+    time_t now = time(NULL) + offset;
     struct tm tm_info;
+    void *result = gmtime_r(&now, &tm_info);
+    if(!result) LOG("gmtime_r failed");
 
-    gettimeofday(&tv, NULL);
-    gmtime_r(&tv.tv_sec, &tm_info);
-    tm_info.tm_sec += offset;
-
-    mktime(&tm_info);
-
-    if (size > 0) {
-        strftime(buffer, size, "%Y-%m-%dT%H:%M:%S", &tm_info);
-        snprintf(buffer + 19, size - 19, ".%03ldZ", tv.tv_usec / 1000);
-    }
+    (void)strftime(buffer, size, "%Y-%m-%dT%H:%M:%SZ", &tm_info);
 }
 

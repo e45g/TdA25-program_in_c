@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "../utils.h"
 #include "json.h"
 #include "json_utils.h"
 
@@ -16,14 +17,14 @@ static inline const char *skip_whitespace(const char *str){
 
 int ensure_buffer_size(char **buffer, size_t *max_size, size_t required_space){
     if(!buffer || !*buffer) {
-        perror("Invalid buffer");
+        LOG("Invalid buffer");
         return -1;
     }
     if(required_space >= *max_size){
         *max_size = required_space * 2;
         char *new_buffer = realloc(*buffer, *max_size);
         if(!new_buffer){
-            perror("ensure_buffer_size failed.");
+            LOG("ensure_buffer_size failed.");
             return -2;
         }
         *buffer = new_buffer;
@@ -176,30 +177,74 @@ Json *parse_value(const char **str){
     return NULL;
 }
 
-char *parse_string(const char **str){
+static void utf8_encode(unsigned int codepoint, char *dest, int *len) {
+    if (codepoint <= 0x7F) {
+        dest[(*len)++] = codepoint;
+    } else if (codepoint <= 0x7FF) {
+        dest[(*len)++] = 0xC0 | (codepoint >> 6);
+        dest[(*len)++] = 0x80 | (codepoint & 0x3F);
+    } else if (codepoint <= 0xFFFF) {
+        dest[(*len)++] = 0xE0 | (codepoint >> 12);
+        dest[(*len)++] = 0x80 | ((codepoint >> 6) & 0x3F);
+        dest[(*len)++] = 0x80 | (codepoint & 0x3F);
+    } else {
+        dest[(*len)++] = 0xF0 | (codepoint >> 18);
+        dest[(*len)++] = 0x80 | ((codepoint >> 12) & 0x3F);
+        dest[(*len)++] = 0x80 | ((codepoint >> 6) & 0x3F);
+        dest[(*len)++] = 0x80 | (codepoint & 0x3F);
+    }
+}
+
+char *parse_string(const char **str) {
     (*str)++;
 
-    const char *start = *str;
+    char *buffer = malloc(256);
+    if (!buffer) return NULL;
 
-    size_t length = 0;
-    while(**str && **str != '\"'){
-        if(**str == '\\') (*str)++;
-        length++;
+    int buf_size = 256, len = 0;
+
+    while (**str && **str != '\"') {
+        if (len + 4 >= buf_size) {
+            buffer = realloc(buffer, buf_size *= 2);
+            if (!buffer) {
+                LOG("Realloc failed");
+                return NULL;
+            }
+        }
+
+        if (**str == '\\') {
+            (*str)++;
+            switch (**str) {
+                case 'u': {
+                    unsigned int codepoint = 0;
+                    for (int i = 0; i < 4 && isxdigit((*str)[1]); i++) {
+                        (*str)++;
+                        codepoint = (codepoint << 4) +
+                            (isdigit(**str) ? **str - '0' : tolower(**str) - 'a' + 10);
+                    }
+                    utf8_encode(codepoint, buffer, &len);
+                    break;
+                }
+                case 'n': buffer[len++] = '\n'; break;
+                case 't': buffer[len++] = '\t'; break;
+                case '\\': buffer[len++] = '\\'; break;
+                case '\"': buffer[len++] = '\"'; break;
+                default: buffer[len++] = **str; break;
+            }
+        } else {
+            buffer[len++] = **str;
+        }
         (*str)++;
     }
-    (*str)++;
 
-    char *string = malloc(length + 1);
-    if(!string) return NULL;
-
-    const char *src = start;
-    char *dest = string;
-    while(*src && *src != '\"'){
-        if(*src == '\\') src++;
-        *dest++ = *src++;
+    if (**str != '\"') {
+        free(buffer);
+        return NULL;
     }
-    *dest = '\0';
-    return string;
+    (*str)++;  // skip closing quote
+    buffer[len] = '\0';
+
+    return buffer;
 }
 
 Json *parse_object(const char **str){
@@ -271,6 +316,7 @@ Json *parse_array(const char **str){
 
     while(**str && **str != ']'){
         *str = skip_whitespace(*str);
+        if(**str == ']') continue;
 
         Json *element = parse_value(str);
         if(!element) {

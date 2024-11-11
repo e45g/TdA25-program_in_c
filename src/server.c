@@ -1,4 +1,5 @@
 #include <errno.h>
+#include <linux/limits.h>
 #include <signal.h>
 #include <sys/epoll.h>
 #include <stdlib.h>
@@ -30,26 +31,13 @@ MimeEntry mime_types[] = {
     {".json", "application/json"},
     {".svg", "image/svg+xml"},
     {".pdf", "application/pdf"},
+    {".txt", "text/plain"}
 };
-
-const char *get_mime_type(const char *path) {
-    const char *ext = strchr(path, '.');
-    if (!ext) return "application/octet-stream";
-
-    for (int i = 0; i < (int) (sizeof(mime_types) / sizeof(mime_types[0])); i++) {
-        if (strcmp(mime_types[i].extension, ext) == 0) {
-            return mime_types[i].mime_type;
-        }
-    }
-
-    return "application/octet-stream";
-}
 
 
 void handle_critical_error(char *msg, int sckt) {
-    perror(msg);
-    if (sckt > 0)
-        close(sckt);
+    LOG(msg);
+    if (sckt > 0) close(sckt);
     db_close();
     exit(EXIT_FAILURE);
 }
@@ -95,20 +83,40 @@ void send_error_response(int client_fd, ResponseStatus status) {
              "Connection: close\r\n\r\n%s",
              info.status, info.message, strlen(body), body);
 
-    send(client_fd, response, strlen(response), 0);
+    int result = send(client_fd, response, strlen(response), 0);
+    if(result == -1){
+        LOG("send failed.");
+        send_error_response(client_fd, ERR_INTERR);
+    }
+
 }
 
-//TODO: redo
 void send_string(int client_fd, char *str) {
-    char response[4096];
-    snprintf(response, sizeof(response), "HTTP/1.1 %d %s\r\nContent-Type: text/html\r\nContent-Length: %zu\r\nConnection: close\r\n\r\n%s",
-             200, "OK", strlen(str), str);
-    send(client_fd, response, strlen(response), 0);
+    size_t response_len = strlen(str) + 256;
+    char *response = malloc(response_len);
+    if(!response){
+        LOG("malloc failed");
+        send_error_response(client_fd, ERR_INTERR);
+        return;
+    }
+
+    snprintf(response, response_len,
+             "HTTP/1.1 %d %s\r\n"
+             "Content-Type: text/html\r\n"
+             "Content-Length: %zu\r\n"
+             "Connection: close\r\n\r\n%s",
+             200, "OK", response_len, str);
+
+    int result = send(client_fd, response, strlen(response), 0);
+    if(result == -1){
+        LOG("send failed.");
+        send_error_response(client_fd, ERR_INTERR);
+    }
 }
 
 
 
-void send_json_response(int client_fd, ResponseStatus status, char *json) {
+void send_json_response(int client_fd, ResponseStatus status, const char *json) {
     ResponseInfo info = get_response_info(status);
     ssize_t json_len = strlen(json);
 
@@ -120,10 +128,9 @@ void send_json_response(int client_fd, ResponseStatus status, char *json) {
              "Connection: keep-alive\r\n\r\n",
              info.status, info.message, json_len);
 
-    // Send headers
     ssize_t total_sent = 0;
     while (total_sent < headers_len) {
-        ssize_t sent = write(client_fd, headers + total_sent, headers_len - total_sent);
+        ssize_t sent = send(client_fd, headers + total_sent, headers_len - total_sent, 0);
         if (sent == -1) {
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
                 continue;
@@ -143,7 +150,7 @@ void send_json_response(int client_fd, ResponseStatus status, char *json) {
         ssize_t chunk_size = (remaining > CHUNK_SIZE) ? CHUNK_SIZE : remaining;
         ssize_t sent_chunk = 0;
         while (sent_chunk < chunk_size) {
-            ssize_t sent = write(client_fd, json + offset + sent_chunk, chunk_size - sent_chunk);
+            ssize_t sent = send(client_fd, json + offset + sent_chunk, chunk_size - sent_chunk, 0);
             if (sent == -1) {
                 if (errno == EAGAIN || errno == EWOULDBLOCK) {
                     continue;
@@ -163,77 +170,79 @@ void send_json_response(int client_fd, ResponseStatus status, char *json) {
     }
 }
 
-int validate_request(const HttpRequest *req) {
-    return strlen(req->path) > 0 && strlen(req->method) > 0 && strlen(req->version) > 0;
+const char *get_mime_type(const char *path) {
+    const char *ext = strrchr(path, '.');
+    if (!ext) return "application/octet-stream";
+
+    for (int i = 0; i < (int) (sizeof(mime_types) / sizeof(mime_types[0])); i++) {
+        if (strcmp(mime_types[i].extension, ext) == 0) {
+            return mime_types[i].mime_type;
+        }
+    }
+
+    return "application/octet-stream";
 }
 
-void handle_parsing_error(int client_fd, char *buf, HttpRequest *req, ResponseStatus error_type) {
-    free(buf);
-    free_http_req(req);
-    send_error_response(client_fd, error_type);
-}
 
-int parse_http_req(int client_fd, const char *buffer, HttpRequest *http_req) {
+int parse_http_req(const char *buffer, HttpRequest *http_req) {
     char *buf = strdup(buffer);
-
     if (!buf) {
-        perror("Memory allocation failed. (parse_http_req)");
-        handle_parsing_error(client_fd, buf, http_req, ERR_INTERR);
-        return -1;
+        LOG("Memory allocation failed.");
+        return ERR_INTERR;
     }
 
     char *line_end = strstr(buf, "\r\n");
     if (!line_end) {
-        handle_parsing_error(client_fd, buf, http_req, ERR_BADREQ);
-        return -2;
+        free(buf);
+        return ERR_BADREQ;
     }
 
     *line_end = '\0';
 
     char *method_end = strchr(buf, ' ');
     if (!method_end) {
-        handle_parsing_error(client_fd, buf, http_req, ERR_BADREQ);
-        return -2;
+        free(buf);
+        return ERR_BADREQ;
     }
 
     *method_end = '\0';
     http_req->method = strdup(buf);
     if (!http_req->method) {
-        perror("Mem allocation failed. (method)");
-        handle_parsing_error(client_fd, buf, http_req, ERR_INTERR);
-        return -1;
+        LOG("Mem allocation failed.");
+        free(buf);
+        return ERR_INTERR;
     }
 
     char *path_start = method_end + 1;
     char *path_end = strchr(path_start, ' ');
     if (!path_end) {
-        handle_parsing_error(client_fd, buf, http_req, ERR_BADREQ);
-        return -2;
+        free(buf);
+        return ERR_BADREQ;
     }
 
     *path_end = '\0';
     http_req->path = strdup(path_start);
     if (!http_req->path) {
-        perror("Mem allocation failed. (path)");
-        handle_parsing_error(client_fd, buf, http_req, ERR_INTERR);
-        return -1;
+        LOG("Mem allocation failed.");
+        free(buf);
+        return ERR_INTERR;
     }
 
     char *version_start = path_end + 1;
     http_req->version = strdup(version_start);
     if (!http_req->version) {
-        perror("Memory allocation failed. (version)");
-        handle_parsing_error(client_fd, buf, http_req, ERR_INTERR);
-        return -1;
+        LOG("Memory allocation failed.");
+        free(buf);
+        return ERR_INTERR;
     }
 
     http_req->headers_len = 0;
     http_req->headers = calloc(MAX_HEADERS, sizeof(Header));
 
     if (!http_req->headers) {
-        perror("Memory allocation failed. (headers)");
-        handle_parsing_error(client_fd, buf, http_req, ERR_INTERR);
-        return -1;
+        LOG("Memory allocation failed. (headers)");
+        free(buf);
+        return ERR_INTERR;
     }
 
     char *header_line = line_end + 2;
@@ -266,7 +275,7 @@ int parse_http_req(int client_fd, const char *buffer, HttpRequest *http_req) {
         http_req->headers[http_req->headers_len].value = strdup(header_value);
 
         if (!http_req->headers[http_req->headers_len].name || !http_req->headers[http_req->headers_len].value) {
-            perror("Memory allocation failed. (header fields)");
+            LOG("Memory allocation failed.");
             header_end += 2;
             continue;
         }
@@ -278,8 +287,8 @@ int parse_http_req(int client_fd, const char *buffer, HttpRequest *http_req) {
     if (body_start) {
         http_req->body = strdup(body_start);
         if (!http_req->body) {
-            perror("Memory allocation failed. (body)");
-            handle_parsing_error(client_fd, buf, http_req, ERR_INTERR);
+            LOG("Memory allocation failed. (body)");
+            free(buf);
             return -1;
         }
     }
@@ -288,7 +297,7 @@ int parse_http_req(int client_fd, const char *buffer, HttpRequest *http_req) {
     return 0;
 }
 
-void free_http_req(HttpRequest *req) {
+void http_req_free(HttpRequest *req) {
     free(req->method);
     free(req->path);
     free(req->version);
@@ -302,25 +311,26 @@ void free_http_req(HttpRequest *req) {
 }
 
 int serve_file(int client_fd, const char *path) {
-    char p[512];
+    int result = 0;
+    char p[PATH_MAX];
+    LOG("%s", path);
 
-    snprintf(p, 512, "%s/%s", get_routes_dir(), path);
+    snprintf(p, PATH_MAX, "%s/%s", get_routes_dir(), path);
     int file_fd = open(p, O_RDONLY);
 
     if (file_fd == -1) {
-        snprintf(p, 512, "%s/%s", get_public_dir(), path);
+        snprintf(p, PATH_MAX, "%s/%s", get_public_dir(), path);
         file_fd = open(p, O_RDONLY);
-        // LOG("%s", p);
 
         if (file_fd == -1) {
-            // LOG("Not found");
             send_error_response(client_fd, ERR_NOTFOUND);
             return -1;
         }
     }
 
     struct stat st;
-    if (fstat(file_fd, &st) == -1) {
+    result = fstat(file_fd, &st);
+    if (result == -1) {
         close(file_fd);
         send_error_response(client_fd, ERR_INTERR);
         return -1;
@@ -334,10 +344,17 @@ int serve_file(int client_fd, const char *path) {
                                   "Connection: close\r\n\r\n",
              mime_type, st.st_size);
 
-    send(client_fd, buffer, strlen(buffer), 0);
+    result = send(client_fd, buffer, strlen(buffer), 0);
+    if(result == -1){
+        LOG("Send failed\n%s", buffer);
+    }
+
 
     ssize_t offset = 0;
-    sendfile(client_fd, file_fd, &offset, st.st_size);
+    result = sendfile(client_fd, file_fd, &offset, st.st_size);
+    if(result == -1){
+        LOG("sendfile failed");
+    }
 
     close(file_fd);
     return 0;
@@ -352,17 +369,13 @@ void handle_client(int client_fd) {
         return;
     }
     buffer[bytes_recieved] = '\0';
-    // LOG(buffer); // FLAG;
+    LOG(buffer); // FLAG;
 
     HttpRequest req = {0};
-    int parse_result = parse_http_req(client_fd, buffer, &req);
-    if (parse_result != 0) {
-        return;
-    }
-
-    if (!validate_request(&req)) {
-        send_error_response(client_fd, ERR_BADREQ);
-        free_http_req(&req);
+    int result = parse_http_req(buffer, &req);
+    if (result != 0){
+        http_req_free(&req);
+        send_error_response(client_fd, result);
         return;
     }
 
@@ -370,7 +383,7 @@ void handle_client(int client_fd) {
         if (strcmp(req.method, r->method) == 0 && match_route(req.path, r->path)) {
             get_wildcards(&req, r);
             r->callback(client_fd, &req);
-            free_http_req(&req);
+            http_req_free(&req);
             return;
         }
     }
@@ -380,7 +393,7 @@ void handle_client(int client_fd) {
     }
 
     send_error_response(client_fd, ERR_NOTFOUND);
-    free_http_req(&req);
+    http_req_free(&req);
 }
 
 void handle_sigint(int sig) {
@@ -394,11 +407,21 @@ void handle_sigint(int sig) {
 }
 
 int main(void) {
-    setvbuf(stdout, NULL, _IONBF, 0);
+    if(remove("log.txt") != 0){
+        perror("Error deleting log.txt");
+    }
+
+    int result = 0;
+    result = setvbuf(stdout, NULL, _IONBF, 0);
+    if(result != 0) handle_critical_error("setvbuf failed", 0);
+
     signal(SIGINT, handle_sigint);
 
-    load_env(".env");
-    db_init("games.db");
+    result = load_env(".env");
+    if(result != 0) LOG("Invalid env file.");
+
+    result = db_init("games.db");
+    if(result != 0) handle_critical_error("db_init failed", 0);
 
     db_exec("CREATE TABLE IF NOT EXISTS games (id TEXT PRIMARY KEY NOT NULL, created_at DATE NOT NULL, updated_at DATE, name TEXT NOT NULL, difficulty TEXT NOT NULL, game_state TEXT NOT NULL, board TEXT NOT NULL);", NULL, 0, NULL);
 
@@ -406,11 +429,11 @@ int main(void) {
     struct epoll_event ev, events[MAX_EVENTS];
 
     int sckt = socket(AF_INET, SOCK_STREAM, 0);
-    if (sckt < 0) handle_critical_error("Socket creation falied.", -1);
+    if (sckt < 0) handle_critical_error("Socket creation failed.", -1);
     server.sckt = sckt;
     server.route = NULL;
 
-    set_non_blocking(sckt);
+    (void) set_non_blocking(sckt);
 
     const struct sockaddr_in addr = {
         .sin_family = AF_INET,
@@ -420,50 +443,62 @@ int main(void) {
     };
 
     int opt = 1;
-    if (setsockopt(sckt, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
-        handle_critical_error("setsockopt failed.", server.sckt);
-    }
+    result = setsockopt(sckt, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+    if(result < 0) handle_critical_error("setsockopt failed.", server.sckt);
 
-    if (bind(sckt, (struct sockaddr *)&addr, sizeof(addr)) != 0) {
-        handle_critical_error("Bind failed.", server.sckt);
-    };
+    result = bind(sckt, (struct sockaddr *)&addr, sizeof(addr));
+    if (result != 0) handle_critical_error("Bind failed.", server.sckt);
 
-    if (listen(sckt, SOMAXCONN) != 0) {
-        handle_critical_error("Listen failed.", server.sckt);
-    };
+    result = listen(sckt, SOMAXCONN);
+    if (result != 0) handle_critical_error("Listen failed.", server.sckt);
 
     int epoll_fd;
     epoll_fd = epoll_create1(0);
     if(epoll_fd == -1){
+        close(sckt);
         handle_critical_error("epoll_create1 failed.", epoll_fd);
     }
 
     ev.events = EPOLLIN;
     ev.data.fd = sckt;
-    epoll_ctl(epoll_fd, EPOLL_CTL_ADD, sckt, &ev);
+    result = epoll_ctl(epoll_fd, EPOLL_CTL_ADD, sckt, &ev);
+    if(result < 0) handle_critical_error("epoll ctl failed.", sckt);
 
-    printf("Server listening on port %d\n", PORT);
+    LOG("Server listening on port %d", PORT);
 
     load_routes();
-    printf("Routes loaded.\n\n");
+    LOG("Routes loaded.");
     print_routes();
 
     while (1) {
         int num_fds = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
+        if(num_fds < 0) handle_critical_error("epoll wait failed", sckt);
         for(int i = 0; i < num_fds; i++){
             if(events[i].data.fd == sckt){
                 int client_fd = accept(server.sckt, NULL, NULL);
-                set_non_blocking(client_fd);
+                if(client_fd < 0) {
+                    LOG("Accept failed.");
+                    continue;
+                }
+
+                (void) set_non_blocking(client_fd);
 
                 ev.events = EPOLLIN | EPOLLET;
                 ev.data.fd = client_fd;
-                epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_fd, &ev);
+                result = epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_fd, &ev);
+                if(result < 0) {
+                    LOG("epoll_ctl failed.");
+                    close(client_fd);
+                }
             }
             else{
                 int client_fd = events[i].data.fd;
-                handle_client(client_fd);
+                if(client_fd < 0) continue;
 
-                epoll_ctl(epoll_fd, EPOLL_CTL_DEL, client_fd, NULL);
+                (void) handle_client(client_fd);
+
+                result = epoll_ctl(epoll_fd, EPOLL_CTL_DEL, client_fd, NULL);
+                if(result < 0) LOG("epoll_ctl EPOLL_CTL_DEL failed");
                 close(client_fd);
             }
         }

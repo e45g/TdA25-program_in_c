@@ -47,10 +47,14 @@ int db_exec(const char *query, db_callback callback, void *callback_data, char *
     }
 
     int rc = sqlite3_exec(db, query, callback, callback_data, error_msg);
+    if (rc != SQLITE_OK && error_msg && *error_msg) {
+        handle_db_error("execution", *error_msg);
+        sqlite3_free(*error_msg);
+    }
     return rc;
 }
 
-int execute_sql_with_placeholders(const char *sql, const char **params, int param_count) {
+int db_execute(const char *sql, const char **params, int param_count) {
     sqlite3_stmt *stmt;
 
     if(!db){
@@ -103,6 +107,7 @@ void free_result(DBResult *result){
 
     free(result);
 }
+
 DBResult *create_result(void){
     DBResult *result = malloc(sizeof(DBResult));
 
@@ -210,7 +215,7 @@ DBResult *db_query(char *query, const char **params, int params_count){
 }
 
 
-int exists(const char *id){
+int db_exists(const char *id){
     if(!db){
         handle_db_error("DB query", "Database not initialized");
         return -1;

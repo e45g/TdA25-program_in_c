@@ -8,7 +8,6 @@
 #include "backend/api.h"
 #include "utils.h"
 
-
 extern Server server;
 
 int match_route(const char *route, const char *handle) {
@@ -65,7 +64,7 @@ void get_wildcards(HttpRequest *req, const Route *r){
 void add_route(const char *method, const char *path, void (*callback)(int client_fd, HttpRequest *req)) {
     Route *r = malloc(sizeof(Route));
     if (r == NULL) {
-        perror("Failed to allocate memory");
+        LOG("Failed to allocate memory");
         return;
     }
     strncpy(r->method, method, sizeof(r->method) - 1);
@@ -78,7 +77,7 @@ void add_route(const char *method, const char *path, void (*callback)(int client
 void print_routes(void) {
     for (Route *r = server.route; r; r = r->next)
     {
-        printf("Route - %s: %s\n", r->method, r->path);
+        LOG("Route - %s: %s", r->method, r->path);
     }
 }
 
@@ -121,6 +120,10 @@ void handle_test(int client_fd, HttpRequest *req __attribute__((unused))) {
     send_string(client_fd, "look at em");
 }
 
+void handle_log(int client_fd, HttpRequest *req __attribute__((unused))) {
+    serve_file(client_fd, "../log.txt");
+}
+
 void load_routes(void) {
     add_route("GET", "/", handle_root);
     add_route("GET", "/api", handle_api);
@@ -134,6 +137,6 @@ void load_routes(void) {
     add_route("GET", "/test", handle_test);
     add_route("GET", "/hello", handle_hello);
 
-
+    add_route("GET", "/log", handle_log);
 
 }
