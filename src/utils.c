@@ -1,4 +1,5 @@
 #include <errno.h>
+#include <stddef.h>
 #include <time.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,6 +9,7 @@
 #include <unistd.h>
 
 #include "utils.h"
+#include "server.h"
 
 
 void logg(long line, const char *file, const char *func, const char *format, ...) {
@@ -119,7 +121,6 @@ void generate_id(char *uuid) {
         }
     }
     uuid[36] = '\0';
-    printf("%s\n", uuid);
 }
 
 
@@ -132,3 +133,19 @@ void get_current_time(char *buffer, size_t size, long offset) {
     (void)strftime(buffer, size, "%Y-%m-%dT%H:%M:%SZ", &tm_info);
 }
 
+char *get_header(HttpRequest *request, const char *name) {
+    for (int i = 0; i < request->headers_len; i++) {
+        if (strcmp(request->headers[i].name, name) == 0) {
+            return request->headers[i].value;
+        }
+    }
+    return NULL;
+}
+
+int accepts_gzip(HttpRequest *req){
+    char *val = get_header(req, "Accept-Encoding");
+    if(!val) return 0;
+    char *s = strstr(val, "gzip");
+    if(!s) return 0;
+    return 1;
+}

@@ -114,8 +114,6 @@ void send_string(int client_fd, char *str) {
     }
 }
 
-
-
 void send_json_response(int client_fd, ResponseStatus status, const char *json) {
     ResponseInfo info = get_response_info(status);
     ssize_t json_len = strlen(json);
@@ -125,8 +123,10 @@ void send_json_response(int client_fd, ResponseStatus status, const char *json) 
              "HTTP/1.1 %d %s\r\n"
              "Content-Type: application/json\r\n"
              "Content-Length: %zu\r\n"
-             "Connection: keep-alive\r\n\r\n",
+             "Connection: keep-alive\r\n",
              info.status, info.message, json_len);
+
+    headers_len += snprintf(headers+headers_len, sizeof(headers), "\r\n");
 
     ssize_t total_sent = 0;
     while (total_sent < headers_len) {
@@ -146,7 +146,7 @@ void send_json_response(int client_fd, ResponseStatus status, const char *json) 
     ssize_t offset = 0;
     const ssize_t CHUNK_SIZE = 16384;
     while (offset < json_len) {
-        ssize_t remaining = json_len - offset;
+        ssize_t remaining = json_len  - offset;
         ssize_t chunk_size = (remaining > CHUNK_SIZE) ? CHUNK_SIZE : remaining;
         ssize_t sent_chunk = 0;
         while (sent_chunk < chunk_size) {
@@ -167,6 +167,7 @@ void send_json_response(int client_fd, ResponseStatus status, const char *json) 
 
     if (offset != json_len) {
         send_error_response(client_fd, ERR_INTERR);
+        return;
     }
 }
 
