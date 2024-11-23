@@ -86,7 +86,7 @@ void send_error_response(int client_fd, ResponseStatus status) {
     int result = send(client_fd, response, strlen(response), 0);
     if(result == -1){
         LOG("send failed.");
-        send_error_response(client_fd, ERR_INTERR);
+        // TOOD: fix this
     }
 
 }
