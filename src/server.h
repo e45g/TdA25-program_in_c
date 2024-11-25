@@ -58,6 +58,9 @@ typedef struct
 {
     int sckt;
     Route *route;
+    int port;
+    const char *route_dir;
+    const char *public_dir;
 } Server;
 
 void free_http_req(HttpRequest *req);

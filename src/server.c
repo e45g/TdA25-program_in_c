@@ -92,7 +92,7 @@ void send_error_response(int client_fd, ResponseStatus status) {
 }
 
 void send_string(int client_fd, char *str) {
-    size_t response_len = strlen(str) + 256;
+    size_t response_len = strlen(str);
     char *response = malloc(response_len);
     if(!response){
         LOG("malloc failed");
@@ -100,14 +100,23 @@ void send_string(int client_fd, char *str) {
         return;
     }
 
-    snprintf(response, response_len,
-             "HTTP/1.1 %d %s\r\n"
+    char headers[512] = {0};
+    snprintf(headers, 512,
+             "HTTP/1.1 200 OK\r\n"
              "Content-Type: text/html\r\n"
              "Content-Length: %zu\r\n"
-             "Connection: close\r\n\r\n%s",
-             200, "OK", response_len, str);
+             "Connection: close\r\n\r\n",
+             strlen(str));
 
-    int result = send(client_fd, response, strlen(response), 0);
+    int result = send(client_fd, headers, strlen(headers), 0);
+
+    if(result == -1) {
+        LOG("send failed.");
+        send_error_response(client_fd, ERR_INTERR);
+    }
+
+
+    result = send(client_fd, str, strlen(str), 0);
     if(result == -1){
         LOG("send failed.");
         send_error_response(client_fd, ERR_INTERR);
@@ -316,11 +325,11 @@ int serve_file(int client_fd, const char *path) {
     char p[PATH_MAX];
     LOG("\n%s", path);
 
-    snprintf(p, PATH_MAX, "%s/%s", get_routes_dir(), path);
+    snprintf(p, PATH_MAX, "%s/%s", server.route_dir, path);
     int file_fd = open(p, O_RDONLY);
 
     if (file_fd == -1) {
-        snprintf(p, PATH_MAX, "%s/%s", get_public_dir(), path);
+        snprintf(p, PATH_MAX, "%s/%s", server.public_dir, path);
         file_fd = open(p, O_RDONLY);
 
         if (file_fd == -1) {
@@ -421,13 +430,17 @@ int main(void) {
     result = load_env(".env");
     if(result != 0) LOG("Invalid env file.");
 
+    server.port = get_port();
+    server.route_dir = get_routes_dir();
+    server.public_dir = get_public_dir();
+
     result = db_init("games.db");
     if(result != 0) handle_critical_error("db_init failed", 0);
 
     db_exec("CREATE TABLE IF NOT EXISTS games (id TEXT PRIMARY KEY NOT NULL, created_at DATE NOT NULL, updated_at DATE, name TEXT NOT NULL, difficulty TEXT NOT NULL, game_state TEXT NOT NULL, board TEXT NOT NULL);", NULL, 0, NULL);
     db_execute("DELETE FROM games;", NULL, 0);
 
-    const int PORT = get_port();
+
     struct epoll_event ev, events[MAX_EVENTS];
 
     int sckt = socket(AF_INET, SOCK_STREAM, 0);
@@ -439,7 +452,7 @@ int main(void) {
 
     const struct sockaddr_in addr = {
         .sin_family = AF_INET,
-        .sin_port = htons(PORT),
+        .sin_port = htons(server.port),
         .sin_addr = {INADDR_ANY},
         .sin_zero = {0},
     };
@@ -466,7 +479,7 @@ int main(void) {
     result = epoll_ctl(epoll_fd, EPOLL_CTL_ADD, sckt, &ev);
     if(result < 0) handle_critical_error("epoll ctl failed.", sckt);
 
-    LOG("Server listening on port %d", PORT);
+    LOG("Server listening on port %d", server.port);
 
     load_routes();
     LOG("Routes loaded.");
