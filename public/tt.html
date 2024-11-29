@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Think Different Academy - Tic Tac Toe</title>
+    <style>
+        /* Root Variables */
+        :root {
+            --primary: #1a1a1a;
+            --accent: #ff6f61;
+            --light: #f0f0f0;
+            --text: #ffffff;
+            --font-family: 'Inter', sans-serif;
+        }
+
+        /* Global Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--primary);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2rem;
+            background-color: var(--primary);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        header .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--accent);
+        }
+
+        header nav {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        header a {
+            color: var(--text);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        header a:hover {
+            color: var(--accent);
+        }
+
+        .hero {
+            text-align: center;
+            padding: 3rem 1rem;
+            background-color: var(--primary);
+            color: var(--light);
+            border-radius: 12px;
+            margin: 2rem 1rem;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .hero h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+        }
+
+        .hero button {
+            background-color: var(--accent);
+            color: var(--light);
+            border: none;
+            padding: 0.8rem 1.5rem;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .hero button:hover {
+            background-color: #e65c50;
+        }
+
+        .game-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .game-card {
+            background-color: var(--primary);
+            border: 2px solid var(--accent);
+            border-radius: 12px;
+            text-align: center;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .game-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .game-card h2 {
+            color: var(--accent);
+            margin-bottom: 1rem;
+        }
+
+        .game-card p {
+            color: var(--text);
+        }
+
+        footer {
+            padding: 2rem 1rem;
+            text-align: center;
+            background-color: var(--primary);
+            color: var(--text);
+            font-size: 0.9rem;
+            margin-top: auto; /* Ensures footer stays at the bottom */
+        }
+
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .hero h1 {
+                font-size: 2rem;
+            }
+
+            .hero p {
+                font-size: 1rem;
+            }
+
+            .hero button {
+                padding: 0.7rem 1.2rem;
+                font-size: 0.9rem;
+            }
+        }
+
+        /* Additional styles for the new content */
+        .game-card .description {
+            font-size: 0.9rem;
+            color: #d1d1d1;
+            margin-top: 0.5rem;
+        }
+
+        .game-card .play-button {
+            margin-top: 1rem;
+            background-color: var(--accent);
+            color: var(--light);
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .game-card .play-button:hover {
+            background-color: #e65c50;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">Think Different Academy</div>
+        <nav>
+            <a href="#">Home</a>
+            <a href="#">Puzzles</a>
+            <a href="#">About</a>
+            <a href="#">Contact</a>
+        </nav>
+    </header>
+
+    <section class="hero">
+        <h1>Tic Tac Toe Challenges</h1>
+        <p>Boost your skills with our collection of dynamic puzzles designed for every level.</p>
+        <button>Start Playing</button>
+
+        <div class="game-grid">
+            <div class="game-card">
+                <h2>Beginner</h2>
+                <p>Great for newcomers to learn and improve.</p>
+                <p class="description">Start with simple strategies and get familiar with the game mechanics.</p>
+                <button class="play-button">Play Now</button>
+            </div>
+            <div class="game-card">
+                <h2>Intermediate</h2>
+                <p>Test your strategic thinking and outsmart opponents.</p>
+                <p class="description">Challenge yourself with more complex scenarios and tactics.</p>
+                <button class="play-button">Play Now</button>
+            </div>
+            <div class="game-card">
+                <h2>Advanced</h2>
+                <p>Take on the toughest challenges for pros.</p>
+                <p class="description">Face off against the best and refine your skills to perfection.</p>
+                <button class="play-button">Play Now</button>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <p>© 2024 Think Different Academy. Built with passion for strategy and learning.</p>
+        <p>
+            Follow us on
+            <a href="#" style="color: var(--accent);">Facebook</a>,
+            <a href="#" style="color: var(--accent);">Twitter</a>,
+            <a href="#" style="color: var(--accent);">Instagram</a>
+        </p>
+    </footer>
+</body>
+</html>
+
