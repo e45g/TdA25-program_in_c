@@ -8,8 +8,8 @@
 #include "api.h"
 #include "be_utils.h"
 
-void handle_api(int client_fd, HttpRequest *req __attribute__((unused))) {
-    Json *json = json_create_object();
+void handle_api(int client_fd, http_req_t *req __attribute__((unused))) {
+    json_t *json = json_create_object();
     json_object_add_string(json, "organization", "Student Cyber Games");
     char *j = json_print(json);
 
@@ -19,11 +19,11 @@ void handle_api(int client_fd, HttpRequest *req __attribute__((unused))) {
     json_free(json);
 }
 
-void handle_game_creation(int client_fd, HttpRequest *req){
-    Json *json = json_parse(req->body);
+void handle_game_creation(int client_fd, http_req_t *req){
+    json_t *json = json_parse(req->body);
     if(!json){
         LOG("Error parsing json: \n%s", req->body);
-        send_json_error(client_fd, (ResponseInfo){ERR_BADREQ, "Error parsing json"});
+        send_json_error(client_fd, (res_info_t){ERR_BADREQ, "Error parsing json"});
         return;
     }
 
@@ -37,11 +37,11 @@ void handle_game_creation(int client_fd, HttpRequest *req){
     int turn = 0;
     int round = 0;
 
-    ResponseInfo result = get_params(json, &name, &difficulty, board_array, board, &turn, &round);
+    res_info_t result = get_params(json, &name, &difficulty, board_array, board, &turn, &round);
     if(result.status != OK_OK){
         LOG("Error: GET PARAMS NOT OK. %d %s", result.status, result.message);
         json_free(json);
-        send_json_error(client_fd, (ResponseInfo){result.status, result.message});
+        send_json_error(client_fd, (res_info_t){result.status, result.message});
         return;
     }
 
@@ -67,7 +67,7 @@ void handle_game_creation(int client_fd, HttpRequest *req){
     int rc = db_execute(sql, params, 7);
     if(rc != 0){
         LOG("Error: Failed to insert into games");
-        send_json_error(client_fd, (ResponseInfo){ERR_INTERR, "DB Error"});
+        send_json_error(client_fd, (res_info_t){ERR_INTERR, "DB Error"});
 
         json_free(json);
         return;
@@ -82,7 +82,7 @@ void handle_game_creation(int client_fd, HttpRequest *req){
     ){
         LOG("Error: Failed json_object_add_string");
 
-        send_json_error(client_fd, (ResponseInfo){ERR_INTERR, "DB Error"});
+        send_json_error(client_fd, (res_info_t){ERR_INTERR, "DB Error"});
         json_free(json);
         return;
     }
@@ -94,16 +94,16 @@ void handle_game_creation(int client_fd, HttpRequest *req){
     json_free(json);
 }
 
-void handle_game_update(int client_fd, HttpRequest *req){
+void handle_game_update(int client_fd, http_req_t *req){
     const char *id = req->wildcards[0];
     if(!db_exists(id)){
-        send_json_error(client_fd, (ResponseInfo){ERR_NOTFOUND, "Resource not found"});
+        send_json_error(client_fd, (res_info_t){ERR_NOTFOUND, "Resource not found"});
         return;
     }
 
-    Json *json = json_parse(req->body);
+    json_t *json = json_parse(req->body);
     if(!json){
-        send_json_error(client_fd, (ResponseInfo){ERR_BADREQ, "Error parsing json"});
+        send_json_error(client_fd, (res_info_t){ERR_BADREQ, "Error parsing json"});
         return;
     }
 
@@ -114,10 +114,10 @@ void handle_game_update(int client_fd, HttpRequest *req){
     int turn = 0;
     int round = 0;
 
-    ResponseInfo result = get_params(json, &name, &difficulty, board_array, board, &turn, &round);
+    res_info_t result = get_params(json, &name, &difficulty, board_array, board, &turn, &round);
     if(result.status != OK_OK){
         json_free(json);
-        send_json_error(client_fd, (ResponseInfo){result.status, result.message});
+        send_json_error(client_fd, (res_info_t){result.status, result.message});
         return;
     }
 
@@ -142,7 +142,7 @@ void handle_game_update(int client_fd, HttpRequest *req){
     int rc = db_execute(sql, params, 6);
     if(rc != 0){
         json_free(json);
-        send_json_error(client_fd, (ResponseInfo){ERR_INTERR, "DB Error"});
+        send_json_error(client_fd, (res_info_t){ERR_INTERR, "DB Error"});
         return;
     }
 
@@ -153,13 +153,13 @@ void handle_game_update(int client_fd, HttpRequest *req){
         != 0
     ) {
         json_free(json);
-        send_json_error(client_fd, (ResponseInfo){ERR_INTERR, "DB Error"});
+        send_json_error(client_fd, (res_info_t){ERR_INTERR, "DB Error"});
         return;
     }
 
-    DBResult *r = db_query("SELECT created_at FROM games WHERE id = ?", (const char**){&id}, 1);
+    db_result_t *r = db_query("SELECT created_at FROM games WHERE id = ?", (const char**){&id}, 1);
     if(!r){
-        send_json_error(client_fd, (ResponseInfo){ERR_INTERR, "DB Error"});
+        send_json_error(client_fd, (res_info_t){ERR_INTERR, "DB Error"});
         json_free(json);
         return;
     }
@@ -168,7 +168,7 @@ void handle_game_update(int client_fd, HttpRequest *req){
     if(rc != 0){
         json_free(json);
         free_result(r);
-        send_json_error(client_fd, (ResponseInfo){ERR_INTERR, "DB Error"});
+        send_json_error(client_fd, (res_info_t){ERR_INTERR, "DB Error"});
         return;
     }
 
@@ -180,31 +180,31 @@ void handle_game_update(int client_fd, HttpRequest *req){
     json_free(json);
 }
 
-void handle_get_game(int client_fd, HttpRequest *req){
+void handle_get_game(int client_fd, http_req_t *req){
     const char *id = req->wildcards[0];
 
     if(!db_exists(id)) {
-        send_json_error(client_fd, (ResponseInfo){ERR_NOTFOUND, ""});
+        send_json_error(client_fd, (res_info_t){ERR_NOTFOUND, ""});
         return;
     }
 
-    DBResult *result = db_query("SELECT created_at, updated_at, name, difficulty, game_state, board FROM games WHERE id = ?", (const char **){&id}, 1);
+    db_result_t *result = db_query("SELECT created_at, updated_at, name, difficulty, game_state, board FROM games WHERE id = ?", (const char **){&id}, 1);
     if(!result){
         LOG("DB error - get_game");
-        send_json_error(client_fd, (ResponseInfo){ERR_INTERR, "DB Error"});
+        send_json_error(client_fd, (res_info_t){ERR_INTERR, "DB Error"});
         return;
     }
 
-    Json *response = json_create_object();
+    json_t *response = json_create_object();
     if(!response){
-        send_json_error(client_fd, (ResponseInfo){ERR_INTERR, ":("});
+        send_json_error(client_fd, (res_info_t){ERR_INTERR, ":("});
         free_result(result);
         return;
     }
 
-    Json *board = load_board(result->rows[0][5]);
+    json_t *board = load_board(result->rows[0][5]);
     if(!board){
-        send_json_error(client_fd, (ResponseInfo){ERR_INTERR, ":("});
+        send_json_error(client_fd, (res_info_t){ERR_INTERR, ":("});
         free_result(result);
         return;
     }
@@ -223,7 +223,7 @@ void handle_get_game(int client_fd, HttpRequest *req){
         json_free(response);
         free_result(result);
 
-        send_json_error(client_fd, (ResponseInfo){ERR_INTERR, "DB Error"});
+        send_json_error(client_fd, (res_info_t){ERR_INTERR, "DB Error"});
         return;
     }
 
@@ -236,33 +236,33 @@ void handle_get_game(int client_fd, HttpRequest *req){
     json_free(response);
 }
 
-void handle_list_games(int client_fd, HttpRequest *req __attribute__((unused))) {
-    DBResult *result = db_query("SELECT id, created_at, updated_at, name, difficulty, game_state, board FROM games", NULL, 0);
+void handle_list_games(int client_fd, http_req_t *req __attribute__((unused))) {
+    db_result_t *result = db_query("SELECT id, created_at, updated_at, name, difficulty, game_state, board FROM games", NULL, 0);
     if (!result) {
         LOG("DB error - list_games");
-        send_json_error(client_fd, (ResponseInfo){ERR_INTERR, "DB Error"});
+        send_json_error(client_fd, (res_info_t){ERR_INTERR, "DB Error"});
         return;
     }
 
-    Json *response = json_create_array(0);
+    json_t *response = json_create_array(0);
     if (!response) {
-        send_json_error(client_fd, (ResponseInfo){ERR_INTERR, ":("});
+        send_json_error(client_fd, (res_info_t){ERR_INTERR, ":("});
         free_result(result);
         return;
     }
 
     for (int i = 0; i < result->num_rows; ++i) {
-        Json *game_object = json_create_object();
+        json_t *game_object = json_create_object();
         if (!game_object) {
             json_free(response);
             free_result(result);
-            send_json_error(client_fd, (ResponseInfo){ERR_INTERR, ":("});
+            send_json_error(client_fd, (res_info_t){ERR_INTERR, ":("});
             return;
         }
 
-        Json *board = load_board(result->rows[i][6]);
+        json_t *board = load_board(result->rows[i][6]);
         if(!board){
-            send_json_error(client_fd, (ResponseInfo){ERR_INTERR, ":("});
+            send_json_error(client_fd, (res_info_t){ERR_INTERR, ":("});
             free_result(result);
             return;
         }
@@ -279,7 +279,7 @@ void handle_list_games(int client_fd, HttpRequest *req __attribute__((unused))) 
             json_free(game_object);
             json_free(response);
             free_result(result);
-            send_json_error(client_fd, (ResponseInfo){ERR_INTERR, ":("});
+            send_json_error(client_fd, (res_info_t){ERR_INTERR, ":("});
             return;
         }
 
@@ -287,7 +287,7 @@ void handle_list_games(int client_fd, HttpRequest *req __attribute__((unused))) 
             json_free(game_object);
             json_free(response);
             free_result(result);
-            send_json_error(client_fd, (ResponseInfo){ERR_INTERR, ":("});
+            send_json_error(client_fd, (res_info_t){ERR_INTERR, ":("});
             return;
         }
     }
@@ -303,18 +303,18 @@ void handle_list_games(int client_fd, HttpRequest *req __attribute__((unused))) 
     json_free(response);
 }
 
-void handle_game_deletion(int client_fd, HttpRequest *req){
+void handle_game_deletion(int client_fd, http_req_t *req){
     const char *id = req->wildcards[0];
 
     int result = db_exists(id);
     if(result != 1){
-        send_json_error(client_fd, (ResponseInfo){ERR_NOTFOUND, "Resource not found"});
+        send_json_error(client_fd, (res_info_t){ERR_NOTFOUND, "Resource not found"});
         return;
     }
 
     result = db_execute("DELETE FROM games WHERE id = ?", (const char **){&id}, 1);
     if(result != 0){
-        send_json_error(client_fd, (ResponseInfo){ERR_INTERR, "DB Error"});
+        send_json_error(client_fd, (res_info_t){ERR_INTERR, "DB Error"});
         return;
     }
 

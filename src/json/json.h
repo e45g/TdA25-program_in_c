@@ -9,7 +9,7 @@
 *
 */
 
-enum JsonType{
+typedef enum {
     JSON_NULL,
     JSON_TRUE,
     JSON_FALSE,
@@ -17,57 +17,57 @@ enum JsonType{
     JSON_STRING,
     JSON_ARRAY,
     JSON_OBJECT
-};
+} json_type_t;
 
-typedef struct Json{
-    enum JsonType type;
+typedef struct json {
+    json_type_t type;
     union {
         double number;
         char *string;
 
         struct {
-            struct Json **elements;
+            struct json **elements;
             size_t size;
             size_t capacity;
         } array;
 
         struct {
             char *key;
-            struct Json *value;
-            struct Json *next;
+            struct json *value;
+            struct json *next;
         } object;
 
     } value;
-} Json;
+} json_t;
 
-Json *json_create_object();
-Json *json_create_array(size_t initial_capacity);
-Json *json_create_string(const char *string);
-Json *json_create_number(double number);
-Json *json_create_null();
-Json *json_create_true();
-Json *json_create_false();
+json_t *json_create_object();
+json_t *json_create_array(size_t initial_capacity);
+json_t *json_create_string(const char *string);
+json_t *json_create_number(double number);
+json_t *json_create_null();
+json_t *json_create_true();
+json_t *json_create_false();
 
-Json *json_parse(const char *json_str);
-char *json_print(Json *json);
+json_t *json_parse(const char *json_str);
+char *json_print(json_t *json);
 
-int json_array_add(Json *array, Json *value);
-// int json_array_remove(Json *array, size_t index); // TODO
-Json *json_array_get(Json *array, size_t index);
+int json_array_add(json_t *array, json_t *value);
+// int json_array_remove(json_t *array, size_t index); // TODO
+json_t *json_array_get(json_t *array, size_t index);
 
-int json_object_add(Json *object, const char *key, Json *value);
-int json_object_add_string(Json *json, const char *key, const char *value);
-// int json_object_remove(Json *object, const char *key); // TODO
-Json *json_object_get(Json *object, const char *key);
-char *json_object_get_string(Json *object, const char *key);
-double *json_object_get_number(Json *object, const char *key);
-Json *json_object_get_array(Json *object, const char *key);
+int json_object_add(json_t *object, const char *key, json_t *value);
+int json_object_add_string(json_t *json, const char *key, const char *value);
+// int json_object_remove(json_t *object, const char *key); // TODO
+json_t *json_object_get(json_t *object, const char *key);
+char *json_object_get_string(json_t *object, const char *key);
+double *json_object_get_number(json_t *object, const char *key);
+json_t *json_object_get_array(json_t *object, const char *key);
 
 
-int json_is_string(Json *json);
-int json_is_array(Json *json);
-int json_is_object(Json *json);
+int json_is_string(json_t *json);
+int json_is_array(json_t *json);
+int json_is_object(json_t *json);
 
-void json_free(Json *json);
+void json_free(json_t *json);
 
 #endif

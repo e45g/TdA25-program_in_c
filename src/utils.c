@@ -133,7 +133,7 @@ void get_current_time(char *buffer, size_t size, long offset) {
     (void)strftime(buffer, size, "%Y-%m-%dT%H:%M:%SZ", &tm_info);
 }
 
-char *get_header(HttpRequest *request, const char *name) {
+char *get_header(http_req_t *request, const char *name) {
     for (int i = 0; i < request->headers_len; i++) {
         if (strcmp(request->headers[i].name, name) == 0) {
             return request->headers[i].value;
@@ -142,7 +142,7 @@ char *get_header(HttpRequest *request, const char *name) {
     return NULL;
 }
 
-int accepts_gzip(HttpRequest *req){
+int accepts_gzip(http_req_t *req){
     char *val = get_header(req, "Accept-Encoding");
     if(!val) return 0;
     char *s = strstr(val, "gzip");

@@ -7,23 +7,23 @@
 #include "json_utils.h"
 #include "json.h"
 
-int json_is_array(Json *json){
+int json_is_array(json_t *json){
     if(!json || json->type != JSON_ARRAY) return 0;
     return 1;
 }
 
-int json_is_object(Json *json){
+int json_is_object(json_t *json){
     if(!json || json->type != JSON_OBJECT) return 0;
     return 1;
 }
 
-int json_is_string(Json *json){
+int json_is_string(json_t *json){
     if(!json || json->type != JSON_STRING) return 0;
     return 1;
 }
 
-Json *json_create_null(){
-    Json *json = calloc(1, sizeof(Json));
+json_t *json_create_null(){
+    json_t *json = calloc(1, sizeof(json_t));
     if(!json) {
         LOG("Malloc failed.");
         return NULL;
@@ -34,8 +34,8 @@ Json *json_create_null(){
     return json;
 }
 
-Json *json_create_false(){
-    Json *json = calloc(1, sizeof(Json));
+json_t *json_create_false(){
+    json_t *json = calloc(1, sizeof(json_t));
     if(!json) {
         LOG("Malloc failed.");
         return NULL;
@@ -46,8 +46,8 @@ Json *json_create_false(){
     return json;
 }
 
-Json *json_create_true(){
-    Json *json = calloc(1, sizeof(Json));
+json_t *json_create_true(){
+    json_t *json = calloc(1, sizeof(json_t));
     if(!json) {
         LOG("Malloc failed.");
         return NULL;
@@ -59,8 +59,8 @@ Json *json_create_true(){
     return json;
 }
 
-Json *json_create_string(const char *string){
-    Json *json = calloc(1, sizeof(Json));
+json_t *json_create_string(const char *string){
+    json_t *json = calloc(1, sizeof(json_t));
     if(!json) {
         LOG("Malloc failed.");
         return NULL;
@@ -78,8 +78,8 @@ Json *json_create_string(const char *string){
     return json;
 }
 
-Json *json_create_number(double number){
-    Json *json = calloc(1, sizeof(Json));
+json_t *json_create_number(double number){
+    json_t *json = calloc(1, sizeof(json_t));
     if(!json) {
         LOG("Malloc failed.");
         return NULL;
@@ -92,8 +92,8 @@ Json *json_create_number(double number){
     return json;
 }
 
-Json *json_create_object(){
-    Json *json = calloc(1, sizeof(Json));
+json_t *json_create_object(){
+    json_t *json = calloc(1, sizeof(json_t));
     if(!json) {
         LOG("Malloc failed.");
         return NULL;
@@ -108,8 +108,8 @@ Json *json_create_object(){
     return json;
 }
 
-Json *json_create_array(size_t initial_capacity){
-    Json *array = calloc(1, sizeof(Json));
+json_t *json_create_array(size_t initial_capacity){
+    json_t *array = calloc(1, sizeof(json_t));
     if(!array) {
         LOG("Malloc failed.");
         return NULL;
@@ -119,7 +119,7 @@ Json *json_create_array(size_t initial_capacity){
     array->type = JSON_ARRAY;
     array->value.array.size = 0;
     array->value.array.capacity = initial_capacity > 0 ? initial_capacity : 16;
-    array->value.array.elements = calloc(array->value.array.capacity, sizeof(Json*));
+    array->value.array.elements = calloc(array->value.array.capacity, sizeof(json_t*));
     if(!array->value.array.elements){
         free(array);
         return NULL;
@@ -128,7 +128,7 @@ Json *json_create_array(size_t initial_capacity){
     return array;
 }
 
-void json_free(Json *json){
+void json_free(json_t *json){
     if(!json) return;
 
     switch(json->type){
@@ -146,9 +146,9 @@ void json_free(Json *json){
         }
 
         case JSON_OBJECT: {
-            Json *current = json->value.object.next;
+            json_t *current = json->value.object.next;
             while(current){
-                Json *next = current->value.object.next;
+                json_t *next = current->value.object.next;
                 free(current->value.object.key);
                 json_free(current->value.object.value);
                 free(current);
@@ -163,12 +163,12 @@ void json_free(Json *json){
     free(json);
 }
 
-int json_array_add(Json *array, Json *value){
+int json_array_add(json_t *array, json_t *value){
     if(!json_is_array(array)) return -1;
 
     if(array->value.array.size >= array->value.array.capacity){
         array->value.array.capacity *= 2;
-        array->value.array.elements = realloc(array->value.array.elements, array->value.array.capacity * sizeof(Json*));
+        array->value.array.elements = realloc(array->value.array.elements, array->value.array.capacity * sizeof(json_t*));
     }
 
     array->value.array.elements[array->value.array.size++] = value;
@@ -176,18 +176,18 @@ int json_array_add(Json *array, Json *value){
     return 0;
 }
 
-int json_object_add(Json *object, const char *key, Json *value){
+int json_object_add(json_t *object, const char *key, json_t *value){
     if(object->type != JSON_OBJECT) return -1;
 
-    Json *new_pair = json_create_object();
+    json_t *new_pair = json_create_object();
     if(!new_pair){
-        LOG("Json json_create_object failed");
+        LOG("json_t json_create_object failed");
         return -2;
     }
 
     new_pair->value.object.key = strdup(key);
     if(!new_pair->value.object.key) {
-        LOG("Json strdup failed");
+        LOG("json_t strdup failed");
         free(new_pair);
         return -3;
     }
@@ -200,24 +200,24 @@ int json_object_add(Json *object, const char *key, Json *value){
     return 0;
 }
 
-int json_object_add_string(Json *json, const char *key, const char *value){
+int json_object_add_string(json_t *json, const char *key, const char *value){
     if(!json_is_object(json)) return -1;
-    Json *str = json_create_string(value);
+    json_t *str = json_create_string(value);
     if(!str){
-        LOG("Json json_create_string failed");
+        LOG("json_t json_create_string failed");
         return -1;
     }
 
     int result = json_object_add(json, key, str);
     if(result != 0){
-        LOG("Json json_object_add failed.");
+        LOG("json_t json_object_add failed.");
         return -2;
     }
 
     return 0;
 }
 
-char *json_print(Json *json){
+char *json_print(json_t *json){
     size_t max_size = 128;
     size_t pos = 0;
 
@@ -233,22 +233,22 @@ char *json_print(Json *json){
     return buffer;
 }
 
-Json *json_parse(const char *json_str){
+json_t *json_parse(const char *json_str){
     const char *str = json_str;
-    Json *json = parse_value(&str);
+    json_t *json = parse_value(&str);
     return json;
 }
 
-Json *json_array_get(Json *array, size_t index){
+json_t *json_array_get(json_t *array, size_t index){
     if(!json_is_array(array)) return NULL;
     if(index >= array->value.array.size) return NULL;
     return array->value.array.elements[index];
 }
 
-Json *json_object_get(Json *object, const char *key){
+json_t *json_object_get(json_t *object, const char *key){
     if(!object || object->type != JSON_OBJECT || !object->value.object.next) return NULL;
 
-    Json *current = object->value.object.next;
+    json_t *current = object->value.object.next;
     while(current){
         if(strcmp(current->value.object.key, key) == 0){
             return current;
@@ -259,21 +259,21 @@ Json *json_object_get(Json *object, const char *key){
     return NULL;
 }
 
-char *json_object_get_string(Json *object, const char *key){
-    Json *json = json_object_get(object, key);
+char *json_object_get_string(json_t *object, const char *key){
+    json_t *json = json_object_get(object, key);
     if(!json) return NULL;
     if(json->value.object.value->type != JSON_STRING) return NULL;
     return json->value.object.value->value.string;
 }
 
-double *json_object_get_number(Json *object, const char *key){
-    Json *json = json_object_get(object, key);
+double *json_object_get_number(json_t *object, const char *key){
+    json_t *json = json_object_get(object, key);
     if(!json) return NULL;
     return &json->value.object.value->value.number;
 }
 
-Json *json_object_get_array(Json *object, const char *key){
-    Json *json = json_object_get(object, key);
+json_t *json_object_get_array(json_t *object, const char *key){
+    json_t *json = json_object_get(object, key);
     if(!json) return NULL;
     if(json->value.object.value->type != JSON_ARRAY) return NULL;
     return json->value.object.value;

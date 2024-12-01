@@ -19,8 +19,8 @@
 #include "routes.h"
 #include "utils.h"
 
-Server server;
-MimeEntry mime_types[] = {
+server_t server;
+mime_entry_t mime_types[] = {
     {".html", "text/html"},
     {".css", "text/css"},
     {".js", "application/javascript"},
@@ -42,24 +42,24 @@ void handle_critical_error(char *msg, int sckt) {
     exit(EXIT_FAILURE);
 }
 
-ResponseInfo get_response_info(ResponseStatus status) {
+res_info_t get_response_info(res_stat_t status) {
     switch (status) {
         case OK_OK:
-            return (ResponseInfo){200, "OK"};
+            return (res_info_t){200, "OK"};
         case OK_CREATED:
-            return (ResponseInfo){201, "Created"};
+            return (res_info_t){201, "Created"};
         case OK_NOCONTENT:
-            return (ResponseInfo){204, "No Content"};
+            return (res_info_t){204, "No Content"};
         case ERR_NOTFOUND:
-            return (ResponseInfo){404, "Not Found"};
+            return (res_info_t){404, "Not Found"};
         case ERR_BADREQ:
-            return (ResponseInfo){400, "Bad Request"};
+            return (res_info_t){400, "Bad Request"};
         case ERR_UNPROC:
-            return (ResponseInfo){422, "Unprocessable Content"};
+            return (res_info_t){422, "Unprocessable Content"};
         case ERR_INTERR:
-            return (ResponseInfo){500, "Internal Server Error"};
+            return (res_info_t){500, "Internal Server Error"};
         default:
-            return (ResponseInfo){500, "Unknown Error"};
+            return (res_info_t){500, "Unknown Error"};
     }
 }
 
@@ -69,8 +69,8 @@ int set_non_blocking(int sock) {
     return fcntl(sock, F_SETFL, flags | O_NONBLOCK);
 }
 
-void send_error_response(int client_fd, ResponseStatus status) {
-    ResponseInfo info = get_response_info(status);
+void send_error_response(int client_fd, res_stat_t status) {
+    res_info_t info = get_response_info(status);
 
     char body[512];
     snprintf(body, sizeof(body), "<html><body><h1>%d %s</h1></body></html>", info.status, info.message);
@@ -123,8 +123,8 @@ void send_string(int client_fd, char *str) {
     }
 }
 
-void send_json_response(int client_fd, ResponseStatus status, const char *json) {
-    ResponseInfo info = get_response_info(status);
+void send_json_response(int client_fd, res_stat_t status, const char *json) {
+    res_info_t info = get_response_info(status);
     ssize_t json_len = strlen(json);
 
     char headers[1024] = {0};
@@ -194,7 +194,7 @@ const char *get_mime_type(const char *path) {
 }
 
 
-int parse_http_req(const char *buffer, HttpRequest *http_req) {
+int parse_http_req(const char *buffer, http_req_t *http_req) {
     char *buf = strdup(buffer);
     if (!buf) {
         LOG("Memory allocation failed.");
@@ -247,7 +247,7 @@ int parse_http_req(const char *buffer, HttpRequest *http_req) {
     }
 
     http_req->headers_len = 0;
-    http_req->headers = calloc(MAX_HEADERS, sizeof(Header));
+    http_req->headers = calloc(MAX_HEADERS, sizeof(header_t));
 
     if (!http_req->headers) {
         LOG("Memory allocation failed. (headers)");
@@ -307,7 +307,7 @@ int parse_http_req(const char *buffer, HttpRequest *http_req) {
     return 0;
 }
 
-void http_req_free(HttpRequest *req) {
+void http_req_free(http_req_t *req) {
     free(req->method);
     free(req->path);
     free(req->version);
@@ -381,7 +381,7 @@ void handle_client(int client_fd) {
     buffer[bytes_received] = '\0';
     LOG(buffer); // FLAG;
 
-    HttpRequest req = {0};
+    http_req_t req = {0};
     int result = parse_http_req(buffer, &req);
     if (result != 0){
         http_req_free(&req);
@@ -389,7 +389,7 @@ void handle_client(int client_fd) {
         return;
     }
 
-    for (Route *r = server.route; r; r = r->next) {
+    for (route_t *r = server.route; r; r = r->next) {
         if (strcmp(req.method, r->method) == 0 && match_route(req.path, r->path)) {
             get_wildcards(&req, r);
             r->callback(client_fd, &req);

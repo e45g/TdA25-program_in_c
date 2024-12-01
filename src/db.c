@@ -85,7 +85,7 @@ int db_execute(const char *sql, const char **params, int param_count) {
     return 0;
 }
 
-void free_result(DBResult *result){
+void free_result(db_result_t *result){
     if(!result) return;
 
     if(result->col_names) {
@@ -108,8 +108,8 @@ void free_result(DBResult *result){
     free(result);
 }
 
-DBResult *create_result(void){
-    DBResult *result = malloc(sizeof(DBResult));
+db_result_t *create_result(void){
+    db_result_t *result = malloc(sizeof(db_result_t));
 
     if (!result) {
         handle_db_error("create result", "Memory allocation failed");
@@ -124,7 +124,7 @@ DBResult *create_result(void){
     return result;
 }
 
-DBResult *db_query(char *query, const char **params, int params_count){
+db_result_t *db_query(char *query, const char **params, int params_count){
     if(!db){
         handle_db_error("DB query", "Database not initialized");
         return NULL;
@@ -145,7 +145,7 @@ DBResult *db_query(char *query, const char **params, int params_count){
         }
     }
 
-    DBResult *result = create_result();
+    db_result_t *result = create_result();
     if(!result){
         sqlite3_finalize(stmt);
         return NULL;

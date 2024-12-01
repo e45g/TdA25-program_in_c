@@ -57,7 +57,7 @@ void escape_and_append_string(char **buffer, size_t *pos, size_t *max_size, cons
     (*buffer)[(*pos)++] = '"';
 }
 
-void json_to_string(const Json *json, char **buffer, size_t *pos, size_t *max_size){
+void json_to_string(const json_t *json, char **buffer, size_t *pos, size_t *max_size){
     if(!json) return;
     switch (json->type) {
         case JSON_NULL: {
@@ -106,7 +106,7 @@ void json_to_string(const Json *json, char **buffer, size_t *pos, size_t *max_si
         case JSON_OBJECT: {
             ensure_buffer_size(buffer, max_size, *pos + 1);
             (*buffer)[(*pos)++] = '{';
-            Json *current = json->value.object.next;
+            json_t *current = json->value.object.next;
             while(current){
                 escape_and_append_string(buffer, pos, max_size, current->value.object.key);
                 append_literal(buffer, pos, max_size, ": ");
@@ -134,7 +134,7 @@ double parse_number(const char **str){
     return num;
 }
 
-Json *parse_value(const char **str){
+json_t *parse_value(const char **str){
     *str = skip_whitespace(*str);
 
     switch(**str){
@@ -143,7 +143,7 @@ Json *parse_value(const char **str){
         case '\"': {
             char *parsed_str = parse_string(str);
             if(!parsed_str) return NULL;
-            Json *json_string = json_create_string(parsed_str);
+            json_t *json_string = json_create_string(parsed_str);
             free(parsed_str);
             return json_string;
         }
@@ -247,8 +247,8 @@ char *parse_string(const char **str) {
     return buffer;
 }
 
-Json *parse_object(const char **str){
-    Json *object = json_create_object();
+json_t *parse_object(const char **str){
+    json_t *object = json_create_object();
     if(!object) return NULL;
 
     *str = skip_whitespace(*str);
@@ -282,7 +282,7 @@ Json *parse_object(const char **str){
 
 
         *str = skip_whitespace(*str);
-        Json *value = parse_value(str);
+        json_t *value = parse_value(str);
         if(!value) {
             free(key);
             json_free(object);
@@ -303,8 +303,8 @@ Json *parse_object(const char **str){
     return object;
 }
 
-Json *parse_array(const char **str){
-    Json *array = json_create_array(0);
+json_t *parse_array(const char **str){
+    json_t *array = json_create_array(0);
     if(!array) return NULL;
 
     *str = skip_whitespace(*str);
@@ -318,7 +318,7 @@ Json *parse_array(const char **str){
         *str = skip_whitespace(*str);
         if(**str == ']') continue;
 
-        Json *element = parse_value(str);
+        json_t *element = parse_value(str);
         if(!element) {
             json_free(array);
             return NULL;

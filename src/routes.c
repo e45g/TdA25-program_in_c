@@ -8,7 +8,7 @@
 #include "backend/api.h"
 #include "utils.h"
 
-extern Server server;
+extern server_t server;
 
 int match_route(const char *route, const char *handle) {
     const char *r = route;
@@ -32,7 +32,7 @@ int match_route(const char *route, const char *handle) {
     return (*r == '\0' && (*h == '\0' || *h == '*'));
 }
 
-void get_wildcards(HttpRequest *req, const Route *r){
+void get_wildcards(http_req_t *req, const route_t *r){
     const char *req_path = req->path;
     const char *route_path = r->path;
 
@@ -61,8 +61,8 @@ void get_wildcards(HttpRequest *req, const Route *r){
     }
 }
 
-void add_route(const char *method, const char *path, void (*callback)(int client_fd, HttpRequest *req)) {
-    Route *r = malloc(sizeof(Route));
+void add_route(const char *method, const char *path, void (*callback)(int client_fd, http_req_t *req)) {
+    route_t *r = malloc(sizeof(route_t));
     if (r == NULL) {
         LOG("Failed to allocate memory");
         return;
@@ -75,30 +75,30 @@ void add_route(const char *method, const char *path, void (*callback)(int client
 }
 
 void print_routes(void) {
-    for (Route *r = server.route; r; r = r->next)
+    for (route_t *r = server.route; r; r = r->next)
     {
-        LOG("Route - %s: %s", r->method, r->path);
+        LOG("route_t - %s: %s", r->method, r->path);
     }
 }
 
 void free_routes(void) {
-    Route *current = server.route;
+    route_t *current = server.route;
     while (current)
     {
-        Route *tmp = current->next;
+        route_t *tmp = current->next;
         free(current);
         current = tmp;
     }
 }
 
-void handle_root(int client_fd, HttpRequest *req __attribute__((unused))) {
+void handle_root(int client_fd, http_req_t *req __attribute__((unused))) {
     send_string(client_fd, "Hello TdA");
 }
 
-void handle_hello(int client_fd, HttpRequest *req __attribute__((unused))) {
+void handle_hello(int client_fd, http_req_t *req __attribute__((unused))) {
     serve_file(client_fd, "test/a.html");
 }
-void handle_test(int client_fd, HttpRequest *req __attribute__((unused))) {
+void handle_test(int client_fd, http_req_t *req __attribute__((unused))) {
     char date[64];
     get_current_time(date, 64, -300);
 
@@ -106,7 +106,7 @@ void handle_test(int client_fd, HttpRequest *req __attribute__((unused))) {
         date
     };
 
-    DBResult *result = db_query("SELECT * FROM games WHERE created_at >= ?", params, 1);
+    db_result_t *result = db_query("SELECT * FROM games WHERE created_at >= ?", params, 1);
     if(!result) return;
     printf("%d %d\n", result->num_cols, result->num_rows);
     for(int i = 0; i < result->num_rows; i++){
@@ -120,7 +120,7 @@ void handle_test(int client_fd, HttpRequest *req __attribute__((unused))) {
     send_string(client_fd, "look at em");
 }
 
-void handle_log(int client_fd, HttpRequest *req __attribute__((unused))) {
+void handle_log(int client_fd, http_req_t *req __attribute__((unused))) {
     serve_file(client_fd, "../log.txt");
 }
 
