@@ -1,6 +1,7 @@
 #include <errno.h>
 #include <linux/limits.h>
 #include <signal.h>
+#include <stddef.h>
 #include <sys/epoll.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -31,7 +32,73 @@ mime_entry_t mime_types[] = {
     {".json", "application/json"},
     {".svg", "image/svg+xml"},
     {".pdf", "application/pdf"},
-    {".txt", "text/plain"}
+    {".txt", "text/plain"},
+    {".xml", "application/xml"},
+    {".zip", "application/zip"},
+    {".tar", "application/x-tar"},
+    {".gz", "application/gzip"},
+    {".mp3", "audio/mpeg"},
+    {".wav", "audio/wav"},
+    {".mp4", "video/mp4"},
+    {".avi", "video/x-msvideo"},
+    {".mov", "video/quicktime"},
+    {".webm", "video/webm"},
+    {".woff", "font/woff"},
+    {".woff2", "font/woff2"},
+    {".ttf", "font/ttf"},
+    {".eot", "application/vnd.ms-fontobject"},
+    {".csv", "text/csv"},
+    {".md", "text/markdown"},
+    {".yaml", "application/x-yaml"},
+    {".bmp", "image/bmp"},
+    {".ico", "image/x-icon"},
+    {".webp", "image/webp"},
+    {".svgz", "image/svg+xml; charset=gzip"},
+    {".otf", "font/otf"},
+    {".psd", "image/vnd.adobe.photoshop"},
+    {".apk", "application/vnd.android.package-archive"},
+    {".exe", "application/vnd.microsoft.portable-executable"},
+    {".jsonld", "application/ld+json"},
+    {".rss", "application/rss+xml"},
+    {".atom", "application/atom+xml"},
+    {".xhtml", "application/xhtml+xml"},
+    {".midi", "audio/midi"},
+    {".mid", "audio/midi"},
+    {".3gp", "video/3gpp"},
+    {".3g2", "video/3gpp2"},
+    {".flv", "video/x-flv"},
+    {".m4a", "audio/mp4"},
+    {".m4v", "video/x-m4v"},
+    {".sql", "application/sql"},
+    {".properties", "text/plain"},
+    {".log", "text/plain"},
+    {".sh", "application/x-sh"},
+    {".pl", "application/x-perl"},
+    {".py", "application/x-python"},
+    {".rb", "application/x-ruby"},
+    {".jar", "application/java-archive"},
+    {".class", "application/java-vm"},
+    {".apk", "application/vnd.android.package-archive"},
+    {".dmg", "application/x-apple-diskimage"},
+    {".iso", "application/x-iso9660-image"},
+    {".bin", "application/octet-stream"},
+    {".deb", "application/x-debian-package"},
+    {".rpm", "application/x-rpm"},
+    {".xpi", "application/x-xpinstall"},
+    {".crx", "application/x-chrome-extension"},
+    {".srt", "application/x-subrip"},
+    {".vtt", "text/vtt"},
+    {".m3u8", "application/vnd.apple.mpegurl"},
+    {".m3u", "audio/x-mpegurl"},
+    {".cue", "application/x-cue"},
+    {".nfo", "text/x-nfo"},
+    {".torrent", "application/x-bittorrent"},
+    {".epub", "application/epub+zip"},
+    {".fb2", "application/x-fictionbook+zip"},
+    {".xps", "application/vnd.ms-xpsdocument"},
+    {".doc", "application/msword"},
+    {".xls", "application/vnd.ms-excel"},
+    {".ppt", "application/vnd.ms-powerpoint"},
 };
 
 
@@ -321,7 +388,7 @@ void http_req_free(http_req_t *req) {
 }
 
 int serve_file(int client_fd, const char *path) {
-    int result = 0;
+    size_t result = 0;
     char p[PATH_MAX];
     LOG("\n%s", path);
 
@@ -351,19 +418,23 @@ int serve_file(int client_fd, const char *path) {
     snprintf(buffer, BUFFER_SIZE, "HTTP/1.1 200 OK\r\n"
                                   "Content-Type: %s\r\n"
                                   "Content-Length: %ld\r\n"
-                                  "Connection: close\r\n\r\n",
+                                  "Connection: keep-alive\r\n\r\n",
              mime_type, st.st_size);
 
     result = send(client_fd, buffer, strlen(buffer), 0);
-    if(result == -1){
+    if(result == (size_t)-1){
         LOG("Send failed\n%s", buffer);
     }
 
 
-    ssize_t offset = 0;
-    result = sendfile(client_fd, file_fd, &offset, st.st_size);
-    if(result == -1){
-        LOG("sendfile failed");
+    off_t offset = 0;
+    while (offset < st.st_size) {
+        result = sendfile(client_fd, file_fd, &offset, st.st_size - offset);
+        if (result == (unsigned long)-1) {
+            LOG("sendfile failed");
+            break;
+        }
+        offset += result;
     }
 
     close(file_fd);

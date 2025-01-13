@@ -184,6 +184,10 @@ int generate(FILE *f, const char *filename, long length, char *ctemp, char *htem
         }
         strncat(props_struct, props_start, props_end-props_start);
         ptr = props_end+2;
+    } else {
+        perror("Add struct ({ })");
+        free(content);
+        return -1;
     }
 
 
@@ -278,8 +282,6 @@ int generate(FILE *f, const char *filename, long length, char *ctemp, char *htem
             return -1;
         }
     }
-
-
 
     char c_file[MAX_FILE_NAME] = {0};
     snprintf(c_file, sizeof(c_file), "%s%s.c", SAVE_PATH, filename);

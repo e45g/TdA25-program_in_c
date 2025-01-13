@@ -75,17 +75,17 @@ int load_env(const char *path){
     return 0;
 }
 
-int get_port(void){
+int get_port(void) {
     const char *port = getenv("PORT");
     return port ? strtol(port, NULL, 10) : 1444;
 }
 
-const char *get_routes_dir(void){
+const char *get_routes_dir(void) {
     const char *dir = getenv("ROUTES_DIR");
     return dir ? dir : "./routes";
 }
 
-const char *get_public_dir(void){
+const char *get_public_dir(void) {
     const char *dir = getenv("PUBLIC_DIR");
     return dir ? dir : "./public";
 }
@@ -95,16 +95,17 @@ const char *get_public_dir(void){
 */
 unsigned long get_num() {
     unsigned long i;
-    __asm__ __volatile__ (
-        "RDTSC\n"
-        "MOV %%EAX, %%EAX\n"
-        "SHL $32, %%RDX\n"
-        "ADD %%RDX, %%RAX\n"
-        : "=a" (i)
-        :
-        : "%rdx"
-    );
-    return (i * ((rand() % 230)+1) % ((rand() % 20)+1));
+    // I want this to be here but there are some problems with it.
+    // __asm__ volatile (
+    //     "RDTSC\n"
+    //     "MOV %%EAX, %%EAX\n"
+    //     "SHL $32, %%RDX\n"
+    //     "ADD %%RDX, %%RAX\n"
+    //     : "=a" (i)
+    //     :
+    //     : "%rdx"
+    // );
+    return (rand() % 239) * (rand() % 23);
 }
 
 void generate_id(char *uuid) {
