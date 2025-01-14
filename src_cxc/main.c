@@ -85,11 +85,10 @@ int get_file_length(FILE *f){
 void process_text(char *s) {
     char *p = s;
     while(*s != '\0'){
-        if(*s == '\n'){
+        while(*s == '\n') {
             memmove(s, s+1, strlen(s+1) + 1);
-
         }
-        else if(*s == '"'){
+        if(*s == '"'){
             memmove(s+2, s+1, strlen(s) + 1);
             *s = '\\';
             *(++s) = '"';
@@ -193,7 +192,7 @@ int generate(FILE *f, const char *filename, long length, char *ctemp, char *htem
 
     char *first_html = strstr(ptr, "\n<");
     if(first_html == NULL){
-        perror("No HTML found, aborting.");
+        perror("No HTML found, aborting. Make sure the first element is at the start of the line");
         free(content);
         return -1;
     }
