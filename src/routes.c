@@ -167,26 +167,27 @@ void handle_game(int client_fd, http_req_t *req __attribute__((unused)))
     free(layout_str);
 }
 
-void handle_search(int client_fd, http_req_t *req __attribute__((unused))) {
-    json_t *json = json_parse(req->body);
-
-    char *name = json_object_get_string(json, "name");
-    char *difficulty = json_object_get_string(json, "difficulty");
-    char *date = json_object_get_string(json, "date");
-
-    db_result_t *dummy = 0;
-    size_t game_count = 0;
-    game_t *games = get_game(name, difficulty, date, &game_count, &dummy);
-
-    // print them out
-    for(int i = 0; i < game_count; i++) {
-        printf("%s %s %s %s %s %s\n", games[i].difficulty, games[i].name, games[i].updated_at, games[i].id, games[i].game_state, games[i].created_at);
-    }
-
-    free_result(dummy);
-    free(games);
-    json_free(json);
-}
+// no use for this :(
+// void handle_search(int client_fd, http_req_t *req __attribute__((unused))) {
+//     json_t *json = json_parse(req->body);
+//
+//     char *name = json_object_get_string(json, "name");
+//     char *difficulty = json_object_get_string(json, "difficulty");
+//     char *date = json_object_get_string(json, "date");
+//
+//     db_result_t *dummy = 0;
+//     size_t game_count = 0;
+//     game_t *games = get_game(name, difficulty, date, &game_count, &dummy);
+//
+//     // print them out
+//     for(size_t i = 0; i < game_count; i++) {
+//         printf("%s %s %s %s %s %s\n", games[i].difficulty, games[i].name, games[i].updated_at, games[i].id, games[i].game_state, games[i].created_at);
+//     }
+//
+//     free_result(dummy);
+//     free(games);
+//     json_free(json);
+// }
 
 void load_routes(void)
 {
@@ -204,7 +205,7 @@ void load_routes(void)
     add_route("GET", "/test", handle_test);
     add_route("GET", "/game", handle_game);
     add_route("GET", "/game/*", handle_game);
-    add_route("POST", "/game/handle_search", handle_search);
+    // add_route("POST", "/game/handle_search", handle_search);
 
     add_route("GET", "/log", handle_log);
 }

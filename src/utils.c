@@ -95,16 +95,15 @@ const char *get_public_dir(void) {
 */
 unsigned long get_num() {
     unsigned long i;
-    // I want this to be here but there are some problems with it.
-    // __asm__ volatile (
-    //     "RDTSC\n"
-    //     "MOV %%EAX, %%EAX\n"
-    //     "SHL $32, %%RDX\n"
-    //     "ADD %%RDX, %%RAX\n"
-    //     : "=a" (i)
-    //     :
-    //     : "%rdx"
-    // );
+    __asm__ volatile (
+        "RDTSC\n"
+        "MOV %%EAX, %%EAX\n"
+        "SHL $32, %%RDX\n"
+        "ADD %%RDX, %%RAX\n"
+        : "=a" (i)
+        :
+        : "%rdx"
+    );
     return (rand() % 239) * (rand() % 23);
 }
 

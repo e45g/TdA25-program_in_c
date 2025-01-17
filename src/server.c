@@ -407,7 +407,7 @@ int serve_file(int client_fd, const char *path) {
 
     struct stat st;
     result = fstat(file_fd, &st);
-    if (result == -1) {
+    if ((int) result == -1) {
         close(file_fd);
         send_error_response(client_fd, ERR_INTERR);
         return -1;
@@ -422,7 +422,7 @@ int serve_file(int client_fd, const char *path) {
              mime_type, st.st_size);
 
     result = send(client_fd, buffer, strlen(buffer), 0);
-    if(result == (size_t)-1){
+    if((int)result == -1){
         LOG("Send failed\n%s", buffer);
     }
 

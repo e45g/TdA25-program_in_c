@@ -1,7 +1,5 @@
 server
 .env
 .vscode
-src/cxc/*
-cxc/*
 *.db
 log.txt
