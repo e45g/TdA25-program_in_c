@@ -1,5 +1,6 @@
 #ifndef %%FILE_ID%%
 #define %%FILE_ID%%
+#include "../game.h"
 
 typedef struct {
     %%PROPS%%

@@ -1,5 +1,6 @@
 ({
     char *children;
+    int page;
 })
 #include <stdlib.h>
 
@@ -15,7 +16,20 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Dosis:wght@500&display=swap" rel="stylesheet" />
 </head>
-<body>
+<body class="flex flex-col h-screen">
+    <nav class="w-full border-b-2 border-border bg-white p-4 flex items-center">
+        <a href="/" class="text-xl font-bold">
+            Archie-chan
+        </a>
+        {{
+            if (props->page == 1) {
+                fast_strcat(output, "<button class=\"ml-auto\" id=\"game-search-menu-trigger\" data-state=\"closed\"> \
+                    <span class=\"icon-arrow-left\"></span> \
+                    <span class=\"icon-arrow-right\"></span> \
+                </button>");
+            }
+        }}
+    </nav>
     {{fast_strcat(output, props->children);}}
     <script src="/dist/main.js"></script>
 </body>

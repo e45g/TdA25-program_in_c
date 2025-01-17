@@ -1,14 +1,15 @@
 ({
-    int x;
+    int length;
+    game_t *game;
 })
 #include <stdlib.h>
 #include "search_result_card.h"
 
 <div class="flex gap-4 w-full flex-col items-stretch" id="game-search-results">
     {{
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < props->length; i++) {
             SearchResultCardProps card_props = {
-                .x = i,
+                .game = &props->game[i],
             };
             char* card_str = render_search_result_card(&card_props);
             fast_strcat(output, card_str);

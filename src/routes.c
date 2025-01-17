@@ -1,3 +1,4 @@
+#include "json/json.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,10 +9,10 @@
 #include "server.h"
 #include "backend/api.h"
 #include "utils.h"
-#include "json/json.h"
 
 #include "cxc/game_page.h"
 #include "cxc/layout.h"
+#include "cxc/search_result_list.h"
 
 extern server_t server;
 
@@ -149,14 +150,21 @@ void handle_log(int client_fd, http_req_t *req __attribute__((unused)))
 
 void handle_game(int client_fd, http_req_t *req __attribute__((unused)))
 {
+
+    db_result_t *dummy = 0;
+    size_t game_count = 0;
+    game_t *games = get_game(NULL, NULL, NULL, &game_count, &dummy);
+
     GamePageProps game_page_props = {
-        10
+        .length=(int) game_count,
+        .game = games
     };
 
     char *game_page_str = render_game_page(&game_page_props);
 
     LayoutProps layout_props = {
-        .children = game_page_str
+        .children = game_page_str,
+        .page = 1
     };
 
     char *layout_str = render_layout(&layout_props);
@@ -165,29 +173,38 @@ void handle_game(int client_fd, http_req_t *req __attribute__((unused)))
 
     free(game_page_str);
     free(layout_str);
+    free_result(dummy);
+    free(games);
 }
 
-// no use for this :(
-// void handle_search(int client_fd, http_req_t *req __attribute__((unused))) {
-//     json_t *json = json_parse(req->body);
-//
-//     char *name = json_object_get_string(json, "name");
-//     char *difficulty = json_object_get_string(json, "difficulty");
-//     char *date = json_object_get_string(json, "date");
-//
-//     db_result_t *dummy = 0;
-//     size_t game_count = 0;
-//     game_t *games = get_game(name, difficulty, date, &game_count, &dummy);
-//
-//     // print them out
-//     for(size_t i = 0; i < game_count; i++) {
-//         printf("%s %s %s %s %s %s\n", games[i].difficulty, games[i].name, games[i].updated_at, games[i].id, games[i].game_state, games[i].created_at);
-//     }
-//
-//     free_result(dummy);
-//     free(games);
-//     json_free(json);
-// }
+void handle_search(int client_fd, http_req_t *req __attribute__((unused))) {
+    json_t *json = json_parse(req->body);
+
+    char *name = json_object_get_string(json, "name");
+    char *difficulty = json_object_get_string(json, "difficulty");
+    char *date = json_object_get_string(json, "date");
+
+    db_result_t *dummy = 0;
+    size_t game_count = 0;
+    game_t *games = get_game(name, difficulty, date, &game_count, &dummy);
+
+    SearchResultListProps search_result_props = {
+        .game = games,
+        .length = (int) game_count,
+    };
+    char *list = render_search_result_list(&search_result_props);
+
+    send_string(client_fd, list);
+
+    free(list);
+
+    free_result(dummy);
+    free(games);
+    json_free(json);
+
+
+
+}
 
 void load_routes(void)
 {
@@ -201,12 +218,11 @@ void load_routes(void)
     add_route("GET", "/api/v1/games/*", handle_get_game);
     add_route("GET", "/api/v1/games", handle_list_games);
 
-    // idk
     add_route("GET", "/test", handle_test);
     add_route("GET", "/game", handle_game);
     add_route("GET", "/game/*", handle_game);
-    // add_route("POST", "/game/handle_search", handle_search);
 
     add_route("GET", "/log", handle_log);
+    add_route("POST", "/game/search", handle_search);
 }
 

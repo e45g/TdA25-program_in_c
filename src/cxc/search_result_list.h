@@ -1,9 +1,11 @@
 #ifndef search_result_list
 #define search_result_list
+#include "../game.h"
 
 typedef struct {
     
-    int x;
+    int length;
+    game_t *game;
 
 } SearchResultListProps;
 

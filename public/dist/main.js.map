@@ -1,0 +1,10 @@
+{
+  "version": 3,
+  "sources": ["../../src/frontend/main.ts"],
+  "sourcesContent": [
+    "console.log(\"BloatScript is running!\");\nconsole.log(\"C is for cookie, that's good enough for me!\");\n"
+  ],
+  "mappings": ";AAAA,QAAQ,IAAI,yBAAyB;AACrC,QAAQ,IAAI,6CAA6C;",
+  "debugId": "143DBBCFF25EA41564756E2164756E21",
+  "names": []
+}

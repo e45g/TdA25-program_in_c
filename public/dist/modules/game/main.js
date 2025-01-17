@@ -22,7 +22,7 @@ function renderField(field) {
   if (field.element) {
     if (field.color) {
       field.element.dataset.color = field.color;
-      field.element.innerHTML = `<div class="icon-${field.color === "x" ? "x" : "circle"}"></div>`;
+      field.element.innerHTML = `<img src="/icon/${field.color === "x" ? "x" : "circle"}.svg" />`;
     } else {
       delete field.element.dataset.color;
       field.element.innerHTML = "";
@@ -93,16 +93,40 @@ var init = function() {
   if (el.query === null) {
     el.query = document.getElementById("game-search-input");
   }
+  if (el.results === null) {
+    el.results = document.getElementById("game-search-results");
+  }
+  if (el.difficulty === null) {
+    el.difficulty = document.getElementById("game-search-difficulty");
+  }
+  if (el.date === null) {
+    el.date = document.getElementById("game-search-date");
+  }
 };
 function onGameSearchFormChange() {
   init();
   const request = {
-    query: el.query?.value
+    name: el.query?.value ? el.query?.value : undefined,
+    difficulty: el.difficulty?.value !== "none" ? el.difficulty?.value : undefined,
+    date: el.date?.value ? new Date(el.date?.value).toISOString() : undefined
   };
   console.log(request);
+  const res = fetch("/game/search", {
+    method: "POST",
+    body: JSON.stringify(request)
+  });
+  res.then((res2) => {
+    return res2.text();
+  }).then((data) => {
+    console.log(data);
+    el.results?.innerHTML && (el.results.innerHTML = data);
+  });
 }
 var el = {
-  query: null
+  query: null,
+  difficulty: null,
+  date: null,
+  results: null
 };
 
 // src/frontend/modules/game/main.ts
@@ -115,15 +139,14 @@ var findCard = function(el2) {
   }
   return findCard(el2.parentElement);
 };
+var onGameSearchFormChange2 = onGameSearchFormChange;
+console.log(onGameSearchFormChange2);
 var board2 = new Proxy({
   map: new Map,
   element: document.getElementById("board"),
   turn: "x"
 }, {});
 initializeBoard(board2);
-var searchInput = document.getElementById("game-search-input");
-searchInput.addEventListener("input", () => {
-});
 var searchResultsEl = document.getElementById("game-search-results");
 var gameCache = new Map;
 searchResultsEl.addEventListener("mousedown", async (e) => {
@@ -167,6 +190,18 @@ searchResultsEl.addEventListener("mouseover", (e) => {
     gameCache.set(gameId, { ...game3, loading: false });
   });
 });
-export {
-  onGameSearchFormChange
-};
+var filtersEl = document.getElementById("game-search-filters");
+var filtersTriggerEl = document.getElementById("game-search-trigger");
+filtersTriggerEl.addEventListener("click", () => {
+  filtersEl.dataset.state = filtersEl.dataset.state === "closed" ? "open" : "closed";
+  filtersTriggerEl.dataset.state = filtersEl.dataset.state;
+});
+var searchMenuTrigger = document.getElementById("game-search-menu-trigger");
+var searchMenu = document.getElementById("game-search-menu-modal");
+searchMenuTrigger.addEventListener("click", () => {
+  searchMenu.dataset.state = searchMenu.dataset.state === "closed" ? "open" : "closed";
+  searchMenuTrigger.dataset.state = searchMenu.dataset.state;
+});
+
+//# debugId=6A59F9CA9BB6C48564756E2164756E21
+//# sourceMappingURL=main.js.map

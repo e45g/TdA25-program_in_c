@@ -1,9 +1,10 @@
 #ifndef search_result_card
 #define search_result_card
+#include "../game.h"
 
 typedef struct {
     
-    int x;
+    game_t *game;
 
 } SearchResultCardProps;
 

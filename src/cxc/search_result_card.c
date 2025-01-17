@@ -9,10 +9,16 @@
 
 char *render_search_result_card(SearchResultCardProps *props)
 {
-    char *output = calloc(262354+1, sizeof(char));
+    char *output = calloc(262443+1, sizeof(char));
     if(!output) return NULL;
 
-    	fast_strcat(output, "<div class=\"border-2 border-border border-b-4 rounded-lg p-4\"    data-search-id=\"00000000-0000-4000-8000-000000000000\">    <h3>I use arch btw</h3>    <p class=\"text-slate-400\">11. 12. 2024 11:30</p></div>");
+    	fast_strcat(output, "<div class=\"border-2 border-border border-b-4 rounded-lg p-4\"    data-search-id=\"");
+	fast_strcat(output, props->game->id);
+	fast_strcat(output, "\">    <h3>");
+	fast_strcat(output, props->game->name);
+	fast_strcat(output, "</h3>    <p class=\"text-slate-400\">");
+	fast_strcat(output, props->game->updated_at);
+	fast_strcat(output, "</p></div>");
 
 
     return output;
