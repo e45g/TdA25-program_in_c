@@ -1,0 +1,10 @@
+({
+  char x;
+})
+
+
+<html>
+...
+{{props->x = 'A';}}
+<p class="...">{{=a}}</p>
+</html>

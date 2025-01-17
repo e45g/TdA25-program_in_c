@@ -188,6 +188,7 @@ void send_string(int client_fd, char *str) {
         LOG("send failed.");
         send_error_response(client_fd, ERR_INTERR);
     }
+    free(response);
 }
 
 void send_json_response(int client_fd, res_stat_t status, const char *json) {
