@@ -59,6 +59,8 @@ char *render_example_props(ExampleFileProps *props) {
     fast_strcat(output, "<p class=\"...\">");
     fast_strcat(output, props->x);
     fast_strcat(output, "</p></html>");
+
+    return output;
 }
 ```
 Funkce pak lze zavolat a odeslat výsledek jako odpověď.
