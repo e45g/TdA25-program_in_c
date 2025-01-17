@@ -201,9 +201,6 @@ void handle_search(int client_fd, http_req_t *req __attribute__((unused))) {
     free_result(dummy);
     free(games);
     json_free(json);
-
-
-
 }
 
 void load_routes(void)
