@@ -1,62 +1,64 @@
-# Simple HTTP Server
+# Tda25 program_in_c
+  - Webová stránka na piškvorkové úlohy.
+  - Kvůli nedostatečné motivaci psát frontend chybí.
+  - Vlastní HTTP Server napsaný v C (ne, není bezpečný).
+    - Zahrnuje zabudovanou podporu pro sqlite3 a práci s jsonem.
+    - Možná bez memory leaků
 
-This project implements a simple HTTP server in C.
+## Členové týmu
+  - Richard Zoubek
+  - Matyáš Svoboda
 
-## TODO
+## Konfigurace
+Pomocí souboru `.env` v root složce jde přenastavit port (`PORT=1234`), public složka (`PUBLIC_DIR=catchall`) a routes složka (`ROUTES_DIR=frontend`). Pak v náhodných .h souborech zbytek :)
 
-  - Make CXC less wonky.
+## Co používáme?
+  - Backend: C
+  - Frontend: CXC: více informací někde v README
+  - Databáze: sqlite3
 
-## File Structure
+## Co nemáme?
+  - Frontend
+  - Bloatware
 
-### src
+## Jak se aplikace spouští
+### Docker
+  - `make docker-rebuild`
 
-  - `server.c`: Main server implementation, including request handling and error management.
-  - `server.h`: Header file defining server structures and function prototypes.
-  - `routes.c`: Route management, including adding and matching routes.
-  - `routes.h`: Header file for route management functions.
-  - `utils.c`: Utility functions for logging and environment variable management.
-  - `utils.h`: Header file for utility functions.
-  - `lib/cJSON`: [cJSON](https://github.com/DaveGamble/cJSON) library.
+## CXC
+Všechny cxc soubory musí být v  `cx_files` složce a končit na `.cx`.
+Fungování bude nejspíš nejjednodušší předvést na ukázce:
 
-## Compilation
-
-To compile the server, run:
-
-```bash
-make
-```
-This will create an executable named `server`.
-
-## Running the Server
-
-After compiling, you can run the server with:
-
-```bash
-./server
-```
+example_file.cx soubor:
+```html
+({
+  char x;
+})
 
 
-## Environment Variables
-
-You can configure the server using a `.env` file. The following variables are supported:
-
-- `PORT`: The port on which the server will listen (default: `1444`).
-- `ROUTES_DIR`: The directory where route files are located (default: `./routes`).
-- `PUBLIC_DIR`: The directory from which static files will be served (default: `./public`).
-
-### Example `.env` file
-
-```
-PORT=8080
-ROUTES_DIR=./routes
-PUBLIC_DIR=./public
+<html>
+...
+{{props->x = 'A';}}
+<p class="...">{{=props->x}}</p> 
+</html>
 ```
 
-## Routes
+tento soubor se předělá na C kód:
 
-The server supports custom routes defined in `routes.c`. You can add routes using the `add_route` function, specifying the HTTP method, path, and callback function.
+```c
+typedef struct {
+  char x;
+} ExampleFileProps;
 
-### Example Routes
+char *render_example_props(ExampleFileProps *props) {
+    char *output = calloc(CONST+1, sizeof(char));
+    if(!output) return NULL;
 
-- `GET /`: Serves the `example/index.html` file.
-- `POST /post_test`: Responds with a JSON object.
+    fast_strcat(output, "<html>...");
+    props->x = 'A';
+    fast_strcat(output, "<p class=\"...\">");
+    fast_strcat(output, props->x);
+    fast_strcat(output, "</p></html>");
+}
+```
+Funkce pak lze zavolat a odeslat výsledek jako odpověď.
