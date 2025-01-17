@@ -1,7 +1,7 @@
 #include "%%NAME%%.h"
 
 #include <stdlib.h>
-#include "cx.h"
+#include "../cx.h"
 
 %%PREPEND%%
 

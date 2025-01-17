@@ -145,7 +145,7 @@ int save_file(char *path, char *buf){
 }
 
 int generate(FILE *f, const char *filename, long length, char *ctemp, char *htemp){
-    response_length = 0;
+    response_length = 512*512;
     char *content;
     char *ptr;
     char props_name[MAX_NAME] = {0};
@@ -364,3 +364,4 @@ int main(void){
 
     return EXIT_SUCCESS;
 }
+

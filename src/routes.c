@@ -4,25 +4,35 @@
 #include <unistd.h>
 
 #include "db.h"
+#include "game.h"
 #include "server.h"
 #include "backend/api.h"
 #include "utils.h"
+#include "json/json.h"
+
+#include "cxc/game_page.h"
+#include "cxc/layout.h"
 
 extern server_t server;
 
-int match_route(const char *route, const char *handle) {
+int match_route(const char *route, const char *handle)
+{
     const char *r = route;
     const char *h = handle;
-    while (*r && *h) {
-        if (*h == '*') {
+    while (*r && *h)
+    {
+        if (*h == '*')
+        {
             r = strchr(r, '/');
-            if (!r) {
+            if (!r)
+            {
                 return 1;
             }
             h++;
             continue;
         }
-        else if (*h != *r) {
+        else if (*h != *r)
+        {
             return 0;
         }
         h++;
@@ -32,7 +42,8 @@ int match_route(const char *route, const char *handle) {
     return (*r == '\0' && (*h == '\0' || *h == '*'));
 }
 
-void get_wildcards(http_req_t *req, const route_t *r){
+void get_wildcards(http_req_t *req, const route_t *r)
+{
     const char *req_path = req->path;
     const char *route_path = r->path;
 
@@ -44,12 +55,16 @@ void get_wildcards(http_req_t *req, const route_t *r){
 
     req->wildcard_num = 0;
 
-    while(i < req_len && j < route_len){
-        if(route_path[j] == '*'){
+    while (i < req_len && j < route_len)
+    {
+        if (route_path[j] == '*')
+        {
             j++;
-            if(req->wildcard_num < 16){
+            if (req->wildcard_num < 16)
+            {
                 int k = 0;
-                while(i < req_len && req_path[i] != '/' && k < 63){
+                while (i < req_len && req_path[i] != '/' && k < 63)
+                {
                     req->wildcards[req->wildcard_num][k++] = req_path[i++];
                 }
                 req->wildcards[req->wildcard_num][k] = '\0';
@@ -61,9 +76,11 @@ void get_wildcards(http_req_t *req, const route_t *r){
     }
 }
 
-void add_route(const char *method, const char *path, void (*callback)(int client_fd, http_req_t *req)) {
+void add_route(const char *method, const char *path, void (*callback)(int client_fd, http_req_t *req))
+{
     route_t *r = malloc(sizeof(route_t));
-    if (r == NULL) {
+    if (r == NULL)
+    {
         LOG("Failed to allocate memory");
         return;
     }
@@ -74,14 +91,16 @@ void add_route(const char *method, const char *path, void (*callback)(int client
     server.route = r;
 }
 
-void print_routes(void) {
+void print_routes(void)
+{
     for (route_t *r = server.route; r; r = r->next)
     {
         LOG("route_t - %s: %s", r->method, r->path);
     }
 }
 
-void free_routes(void) {
+void free_routes(void)
+{
     route_t *current = server.route;
     while (current)
     {
@@ -91,14 +110,13 @@ void free_routes(void) {
     }
 }
 
-void handle_root(int client_fd, http_req_t *req __attribute__((unused))) {
+void handle_root(int client_fd, http_req_t *req __attribute__((unused)))
+{
     send_string(client_fd, "Hello TdA");
 }
 
-void handle_hello(int client_fd, http_req_t *req __attribute__((unused))) {
-    serve_file(client_fd, "test/a.html");
-}
-void handle_test(int client_fd, http_req_t *req __attribute__((unused))) {
+void handle_test(int client_fd, http_req_t *req __attribute__((unused)))
+{
     char date[64];
     get_current_time(date, 64, -300);
 
@@ -107,10 +125,13 @@ void handle_test(int client_fd, http_req_t *req __attribute__((unused))) {
     };
 
     db_result_t *result = db_query("SELECT * FROM games WHERE created_at >= ?", params, 1);
-    if(!result) return;
+    if (!result)
+        return;
     printf("%d %d\n", result->num_cols, result->num_rows);
-    for(int i = 0; i < result->num_rows; i++){
-        for(int j = 0; j < result->num_cols; j++){
+    for (int i = 0; i < result->num_rows; i++)
+    {
+        for (int j = 0; j < result->num_cols; j++)
+        {
             printf("%s ", result->rows[i][j]);
         }
         printf("\n");
@@ -120,24 +141,71 @@ void handle_test(int client_fd, http_req_t *req __attribute__((unused))) {
     send_string(client_fd, "look at em");
 }
 
-void handle_log(int client_fd, http_req_t *req __attribute__((unused))) {
+void handle_log(int client_fd, http_req_t *req __attribute__((unused)))
+{
     serve_file(client_fd, "../log.txt");
+
 }
 
-void load_routes(void) {
-    add_route("GET", "/", handle_root);
-    add_route("GET", "/api", handle_api);
+void handle_game(int client_fd, http_req_t *req __attribute__((unused)))
+{
+    GamePageProps game_page_props = {
+        10
+    };
 
+    char *game_page_str = render_game_page(&game_page_props);
+
+    LayoutProps layout_props = {
+        .children = game_page_str
+    };
+
+    char *layout_str = render_layout(&layout_props);
+
+    send_string(client_fd, layout_str);
+
+    free(game_page_str);
+    free(layout_str);
+}
+
+void handle_search(int client_fd, http_req_t *req __attribute__((unused))) {
+    json_t *json = json_parse(req->body);
+
+    char *name = json_object_get_string(json, "name");
+    char *difficulty = json_object_get_string(json, "difficulty");
+    char *date = json_object_get_string(json, "date");
+
+    db_result_t *dummy = 0;
+    size_t game_count = 0;
+    game_t *games = get_game(name, difficulty, date, &game_count, &dummy);
+
+    // print them out
+    for(int i = 0; i < game_count; i++) {
+        printf("%s %s %s %s %s %s\n", games[i].difficulty, games[i].name, games[i].updated_at, games[i].id, games[i].game_state, games[i].created_at);
+    }
+
+    free_result(dummy);
+    free(games);
+    json_free(json);
+}
+
+void load_routes(void)
+{
+    add_route("GET", "/", handle_game);
+
+    // api
+    add_route("GET", "/api", handle_api);
     add_route("POST", "/api/v1/games", handle_game_creation);
     add_route("PUT", "/api/v1/games/*", handle_game_update);
     add_route("DELETE", "/api/v1/games/*", handle_game_deletion);
     add_route("GET", "/api/v1/games/*", handle_get_game);
     add_route("GET", "/api/v1/games", handle_list_games);
 
+    // idk
     add_route("GET", "/test", handle_test);
-    add_route("GET", "/game", handle_hello);
-    add_route("GET", "/game/*", handle_hello);
+    add_route("GET", "/game", handle_game);
+    add_route("GET", "/game/*", handle_game);
+    add_route("POST", "/game/handle_search", handle_search);
 
     add_route("GET", "/log", handle_log);
-
 }
+
