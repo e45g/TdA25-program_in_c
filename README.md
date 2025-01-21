@@ -2,7 +2,7 @@
   - Webová stránka na piškvorkové úlohy.
   - Kvůli nedostatečné motivaci psát frontend chybí.
   - Vlastní HTTP Server napsaný v C (ne, není bezpečný).
-    - Zahrnuje zabudovanou podporu pro sqlite3 a práci s jsonem.
+    - Podpora pro práci s sqlite3 s jsonem.
     - Možná bez memory leaků
 
 ## Členové týmu
@@ -23,6 +23,9 @@ Pomocí souboru `.env` v root složce jde přenastavit port (`PORT=1234`), publi
 
 ## Jak se aplikace spouští
 ### Docker
+#### První zapnutí
+  - `make docker-build`
+#### Spouštění znovu
   - `make docker-rebuild`
 
 ## CXC
@@ -39,7 +42,7 @@ example_file.cx soubor:
 <html>
 ...
 {{props->x = 'A';}}
-<p class="...">{{=props->x}}</p> 
+<p class="...">{{=props->x}}</p>
 </html>
 ```
 

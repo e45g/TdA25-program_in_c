@@ -1,6 +1,7 @@
 #include "layout.h"
 
 #include <stdlib.h>
+#include <string.h>
 #include "../cx.h"
 
 

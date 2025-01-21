@@ -32,23 +32,22 @@ game_t *get_game(char *name, char *difficulty, char *updated_at, size_t *game_co
         params[params_count++] = updated_at;
     }
 
-    printf("%s; %d\n", query, params_count);
-    for (int i = 0; i < params_count; i++) {
-        printf("%s \n", params[i]);
+    db_result_t *result = db_query(query, (const char **)params, params_count);
+
+    if (name != NULL) {
+        free(params[0]);
     }
 
-    db_result_t *result = db_query(query, (const char **)params, params_count);
-    if(result->num_rows == 0) return NULL;
+    if(result->num_rows == 0) {
+        free_result(result);
+        return NULL;
+    };
 
     *p = result;
     *game_count = result->num_rows;
 
     game_t *games = calloc(result->num_rows, sizeof(game_t));
     size_t current_game = 0;
-
-    if (name != NULL) {
-        free(params[0]);
-    }
 
     for (int row = 0; row < result->num_rows; row++) {
         games[current_game].id = result->rows[row][0];

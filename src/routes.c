@@ -198,8 +198,8 @@ void handle_search(int client_fd, http_req_t *req __attribute__((unused))) {
 
     free(list);
 
-    free_result(dummy);
     free(games);
+    free_result(dummy);
     json_free(json);
 }
 

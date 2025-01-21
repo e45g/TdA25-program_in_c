@@ -1,6 +1,7 @@
 #include "game_page.h"
 
 #include <stdlib.h>
+#include <string.h>
 #include "../cx.h"
 
 

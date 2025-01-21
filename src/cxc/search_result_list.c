@@ -1,6 +1,7 @@
 #include "search_result_list.h"
 
 #include <stdlib.h>
+#include <string.h>
 #include "../cx.h"
 
 
